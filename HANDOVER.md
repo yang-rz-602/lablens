@@ -1,6 +1,6 @@
 # LabLens 交接文档
 
-> 最后更新：2026-09-11　｜　当前提交：`19ab105`　｜　状态：**已上线，可交付**
+> 最后更新：2026-09-11　｜　状态：**已上线、已交付、两个远端均已同步**
 
 ---
 
@@ -33,11 +33,10 @@
 
 ```
 分支            main
-提交数          11
-HEAD            19ab105  chore: sync for ModelScope deployment
 未提交改动      无
 远端 origin     https://github.com/yang-rz-602/lablens.git
 远端 modelscope https://modelscope.cn/studios/yangrz2222/lablens.git
+同步状态        两个远端均已同步（git push origin main / git push modelscope HEAD:master）
 ```
 
 **创空间状态**（查 OpenAPI 实测）：
@@ -53,12 +52,25 @@ base_image  = ubuntu22.04-py311-torch2.9.1-modelscope1.35.0
 host        = https://yangrz2222-lablens.ms.show
 ```
 
-### 2.2 ⚠️ 两件未完成的事
+### 2.2 已解决 / 待办
 
-| # | 事项 | 影响 | 怎么处理 |
-|---|---|---|---|
-| 1 | **GitHub 有 2 个提交未推送**（`ff29820`、`19ab105`） | GitHub 上的代码落后于 ModelScope。含全部界面美化改动（1446 行） | 这台机器到 `github.com` 持续超时，重试 5 次均失败。网络恢复后 `git push origin main` 即可。**ModelScope 不受影响，已是最新代码** |
-| 2 | **README 缺界面截图** | 面试官在 GitHub 上只能看文字 | 打开线上地址截 2 张（②指标与判读依据页、③解读页）放进 `docs/images/`。注意：沙箱禁止命名管道，Playwright 与 Chrome 都跑不起来，**必须人工截** |
+| # | 事项 | 状态 |
+|---|---|---|
+| 1 | GitHub 提交同步 | ✅ **已解决**。曾因本机到 `github.com` 超时积压 3 个提交，后已全部推送（`fa6a53c..ffb5bc7`）。**注意这台机器到 GitHub 不稳定，推送失败重试几次即可** |
+| 2 | **README 缺界面截图** | ⚠️ **仍未完成**。面试官在 GitHub 上只能看文字。见下方"待办" |
+
+### 2.3 ⚠️ 关于截图：为什么一直没做上
+
+不是没试，是**环境不允许**，三条路都被同一堵墙挡住（记录在此避免重复踩）：
+
+1. **Playwright** → 它通过**命名管道**和 Node 驱动通信，沙箱禁止（`couldn't create signal pipe`）
+2. **Chrome headless** → 进程间通信走 `mojo::platform_channel`，同样是命名管道
+3. **申请更宽权限后 Chrome 能起来** → 但 Streamlit 靠 websocket 拉内容，
+   Chrome 的一次性 `--screenshot` 等不到渲染完成，**截出来是空白页**（已实测确认）
+
+**结论：截图必须人工做。** 打开 <https://modelscope.cn/studios/yangrz2222/lablens>，
+选 `case_012`（血钾 6.8）→ 点「开始分析」→ 截 2 张：
+②「指标与判读依据」页（含危急值提示与判据表）、③「解读」页。放进 `docs/images/`。
 
 ### 2.3 本地环境版本
 
@@ -411,13 +423,12 @@ python scripts/deploy_modelscope.py --owner yangrz2222 --tail-logs
 
 ### 阻塞中
 
-- [ ] **GitHub 有 2 个提交未推送**（`ff29820`、`19ab105`）—— 本机到 github.com 超时。
-      网络恢复后 `git push origin main` 即可
+- 无。
 
 ### 建议补上（按性价比排序）
 
 - [ ] **README 截图**（最高性价比）—— 面试官在 GitHub 上不会去点链接跑代码。
-      打开线上地址截 2 张放进 `docs/images/`
+      见 2.3 节的说明与具体步骤
 - [ ] **轮换 ModelScope Token** —— 它曾在对话中明文出现过
 - [ ] **补长尾语料** —— 字典里的 13 项还没有解释语料
       （`neut_abs` / `lymph_abs` / `u_wbc` / `u_rbc` / `u_pro` / `u_glu` / `u_ket` /
