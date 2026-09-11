@@ -34,3 +34,6 @@ Thumbs.db
 
 # 部署令牌（本地临时文件，绝不可提交）
 .ms_token
+
+# 本地截图用的浏览器 profile
+.chrome-profile/
