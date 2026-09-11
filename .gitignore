@@ -31,3 +31,6 @@ lablens_trend.duckdb*
 .idea/
 .DS_Store
 Thumbs.db
+
+# 部署令牌（本地临时文件，绝不可提交）
+.ms_token
