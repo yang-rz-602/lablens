@@ -1,5 +1,9 @@
 # 部署到魔搭社区（ModelScope）创空间
 
+> **本项目已部署**：<https://modelscope.cn/studios/yangrz2222/lablens>
+> 状态 Running，可见性 public，规格 `platform/2v-cpu-16g-mem`（免费），**首次构建实测约 5 分钟**（Building → Deploying → Running）。
+> 隐式直连地址：`https://yangrz2222-lablens.ms.show`（未登录返回 200）。
+
 > 本文依据魔搭官方 [`ms-studio-deploy` Skill](https://github.com/modelscope/modelscope-skills/blob/main/skills/ms-studio-deploy/SKILL.md) 整理，
 > 该文档标注为 **verified live against ModelScope OpenAPI ｜ modelscope 1.37.1 / modelscope_hub 0.1.2（2026-06-29）**。
 > 平台规则会变，执行前建议再核对一次官方文档。

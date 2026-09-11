@@ -26,6 +26,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -77,6 +78,7 @@ def main() -> int:
     ap.add_argument("--dashscope-key", default="", help="可选：写入创空间 secret，供线上直接调用模型")
     ap.add_argument("--skip-deploy", action="store_true", help="只推代码，不触发部署")
     ap.add_argument("--tail-logs", action="store_true", help="部署后轮询运行日志")
+    ap.add_argument("--timeout", type=int, default=600, help="--tail-logs 的最长等待秒数，默认 600")
     args = ap.parse_args()
 
     api = args.endpoint.rstrip("/") + "/openapi/v1"
@@ -236,26 +238,52 @@ def main() -> int:
             ok("部署已触发")
 
         if args.tail_logs:
-            step("轮询运行日志")
-            for i in range(1, 21):
-                time.sleep(6)
+            step(f"轮询构建/运行状态与日志（首次构建实测约 5 分钟，上限 {args.timeout}s）")
+            deadline = time.time() + args.timeout
+            finished = False
+            i = 0
+            while time.time() < deadline and not finished:
+                i += 1
+                time.sleep(10)
                 try:
+                    info = (client.get(f"/studios/{args.owner}/{args.repo}").json().get("data")) or {}
+                    status = str(info.get("status") or "?")
+
                     lg = client.get(f"/studios/{args.owner}/{args.repo}/logs/run").json()
-                    text = lg.get("data")
-                    if isinstance(text, list):
-                        text = "\n".join(str(t) for t in text)
-                    text = str(text or "")
+                    data = lg.get("data")
+                    if isinstance(data, dict):
+                        lines = data.get("logs") or []
+                    elif isinstance(data, list):
+                        lines = data
+                    else:
+                        lines = [data] if data else []
+                    text = "\n".join(
+                        ln if isinstance(ln, str) else json.dumps(ln, ensure_ascii=False)
+                        for ln in lines
+                    )
+
                     last = next((ln for ln in reversed(text.splitlines()) if ln.strip()), "")
-                    print(f"    [{i:02d}] {last[:150]}", flush=True)
-                    if "Running" in text:
-                        ok("状态：Running")
-                        break
-                    if any(k in text for k in ("ModuleNotFoundError", "SyntaxError", "Traceback", "Failed")):
-                        warn("日志中出现错误，完整内容如下：")
-                        print(text)
-                        break
+                    print(f"    [{i:02d}] status={status}  {last.strip()[:120]}", flush=True)
+
+                    if status.lower() == "running":
+                        # 状态为 Running 只说明进程起来了，再看一眼日志里有没有启动异常
+                        if any(k in text for k in ("ModuleNotFoundError", "SyntaxError", "Traceback")):
+                            warn("状态 Running，但日志中存在异常，请人工确认")
+                            print(text[-3000:])
+                        else:
+                            ok("状态：Running，启动成功")
+                        finished = True
+                    elif status.lower() in {"failed", "error", "stopped", "crashed"}:
+                        warn(f"状态：{status}")
+                        if text:
+                            print(text[-4000:])
+                        finished = True
+                    # Building / Deploying / Pending 都是中间态，继续等
                 except Exception as exc:  # noqa: BLE001
-                    warn(f"[{i:02d}] 读取日志失败：{exc}")
+                    warn(f"[{i:02d}] 查询失败：{exc}")
+            if not finished:
+                warn(f"等待超过 {args.timeout}s 仍未就绪。首次构建通常较慢，可稍后重新运行本脚本，"
+                     "或到网页控制台的日志页查看")
 
     # ----------------------------------------------------------------- #
     print(f"\n{'=' * 64}")
