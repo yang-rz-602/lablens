@@ -177,17 +177,36 @@ def main() -> int:
         run_git(["init"], ROOT)
 
     remote_url = f"https://oauth2:{token}@{host}/studios/{args.owner}/{args.repo}.git"
+    ident = [
+        "-c", f"user.name={os.environ.get('GIT_AUTHOR_NAME', 'Runze Yang')}",
+        "-c", f"user.email={os.environ.get('GIT_AUTHOR_EMAIL', 'y18195226719@gmail.com')}",
+    ]
     try:
         run_git(["remote", "remove", "modelscope"], ROOT, check=False)
         run_git(["remote", "add", "modelscope", remote_url], ROOT)
         run_git(["add", "-A"], ROOT, check=False)
         # 没有改动时 commit 会失败，这是正常的，所以 check=False
-        run_git(
-            ["-c", "user.name=Runze Yang", "-c", "user.email=y18195226719@gmail.com",
-             "commit", "-q", "-m", "chore: sync for ModelScope deployment"],
-            ROOT,
-            check=False,
-        )
+        run_git([*ident, "commit", "-q", "-m", "chore: sync for ModelScope deployment"], ROOT, check=False)
+
+        # 新建的创空间里已经有平台初始化的一份内容（README.md 等）。
+        # 直接 push 会被以 non-fast-forward 拒绝，所以必须先 fetch 再 merge 一次。
+        if run_git(["fetch", "modelscope", "master"], ROOT, check=False) == 0:
+            merged = run_git(
+                [*ident, "merge", "modelscope/master", "--allow-unrelated-histories", "--no-edit"],
+                ROOT,
+                check=False,
+            )
+            if merged != 0:
+                # 冲突时一律保留本地版本：平台初始化的是占位文件，没有保留价值
+                warn("与创空间初始内容有冲突，保留本地版本")
+                run_git(["checkout", "--ours", "."], ROOT, check=False)
+                run_git(["add", "-A"], ROOT, check=False)
+                run_git(
+                    [*ident, "commit", "-q", "-m", "Merge ModelScope init content, keep local"],
+                    ROOT,
+                    check=False,
+                )
+
         # 本地分支可能叫 main，创空间只认 master，用 refspec 显式指定
         run_git(["push", "modelscope", "HEAD:master"], ROOT)
         ok("已推送到 master")
