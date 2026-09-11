@@ -292,9 +292,31 @@ lablens/
 ├── data/                KB-1 指标字典 + KB-3 解释语料
 ├── evals/               合成评测集 + 评测脚本 + RESULTS.md
 ├── tests/               163 个单测
+├── docs/                部署文档（魔搭创空间）
+├── scripts/             一键部署脚本
+├── requirements.txt     创空间依赖清单（平台不读 pyproject.toml）
 ├── mcp_server.py        MCP 封装（零依赖）
 └── app.py               Streamlit 界面
 ```
+
+---
+
+## 部署到魔搭创空间
+
+[`docs/DEPLOY_MODELSCOPE.md`](docs/DEPLOY_MODELSCOPE.md) 有完整清单，一句话版：
+
+```powershell
+$env:MODELSCOPE_API_KEY = "你的令牌"        # https://modelscope.cn/my/myaccesstoken
+python scripts/deploy_modelscope.py --owner <你的魔搭用户名> --tail-logs
+```
+
+要点（都是实测或官方文档核验过的）：
+
+- 本项目是 Streamlit 应用 → 选 `streamlit` SDK 类型，**不需要实名认证、不需要 Docker、不用管端口**
+- 实测 Streamlit 类型**只有一个免费规格** `platform/2v-cpu-16g-mem`，不存在付费选项
+- 创空间**只读 `requirements.txt`，不读 `pyproject.toml`**——这是最常见的启动失败原因
+- 创空间默认分支是 **`master`**（不是 main），且**禁止 force push**
+- 创空间**无法通过 API 删除**，只能在网页控制台删；程序侧只能 stop
 
 ---
 

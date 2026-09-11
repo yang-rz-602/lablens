@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -93,8 +94,10 @@ def sidebar() -> dict:
         preset = PRESETS[provider_key]
         api_key = st.sidebar.text_input(
             f"API Key（{preset.api_key_env}）", type="password",
-            help="也可以在环境变量里配置。留空则使用离线模式。",
+            help="留空则使用服务端已配置的环境变量；两者都没有时回退到离线模式。",
         )
+        if not api_key and os.environ.get(preset.api_key_env):
+            st.sidebar.caption(f"✅ 已检测到服务端环境变量 `{preset.api_key_env}`")
         model = st.sidebar.text_input("模型名", value=preset.vision_model or preset.text_model)
 
     st.sidebar.markdown("### 数据")
@@ -126,12 +129,21 @@ def sidebar() -> dict:
 
 
 def make_client(cfg: dict):
-    """构造 LLM 客户端；失败或没有 Key 时返回 None（走离线模式）。"""
-    if not cfg["provider_key"] or not cfg["api_key"]:
+    """构造 LLM 客户端；失败或没有 Key 时返回 None（走离线模式）。
+
+    凭证优先级：**界面上填的 > 服务端环境变量**。
+    后者是部署到 ModelScope / Hugging Face 等平台时必须支持的路径——
+    平台把 secrets 以环境变量注入，如果只读界面输入框，配了 secret 也不会生效。
+    """
+    if not cfg["provider_key"]:
+        return None
+    preset = PRESETS[cfg["provider_key"]]
+    api_key = cfg["api_key"] or os.environ.get(preset.api_key_env, "")
+    if not api_key:
         return None
     try:
         return OpenAICompatClient.from_preset(
-            cfg["provider_key"], api_key=cfg["api_key"], model=cfg["model"] or None
+            cfg["provider_key"], api_key=api_key, model=cfg["model"] or None
         )
     except LLMError:
         return None

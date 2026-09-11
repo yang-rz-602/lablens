@@ -1,0 +1,18 @@
+# ModelScope 创空间（Streamlit SDK）依赖清单
+#
+# 为什么单独放一个 requirements.txt：
+# 创空间的 Gradio / Streamlit SDK 通过 requirements.txt 安装依赖，
+# **不读取 pyproject.toml**。这是部署到魔搭时最常见的失败原因
+# （启动日志报 ModuleNotFoundError → 就是这里漏了包）。
+#
+# 版本刻意不锁死到具体小版本，避免与创空间基础镜像里预装的
+# streamlit / numpy 等产生冲突。
+
+pydantic>=2.6
+httpx>=0.27
+PyYAML>=6.0
+pandas>=2.0
+
+# 趋势存储用。创空间重启即丢数据，这项功能在线上意义有限，
+# 但装上是为了让界面里的开关不至于抛异常。
+duckdb>=1.0
