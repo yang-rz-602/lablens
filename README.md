@@ -2,7 +2,7 @@
 
 > **数值判定 100% 交给确定性代码，语言模型只负责把结果翻译成人话；没有参考区间时，系统拒绝判断。**
 
-[![tests](https://img.shields.io/badge/tests-163%20passed-brightgreen)](#评测)
+[![tests](https://img.shields.io/badge/tests-218%20passed-brightgreen)](#评测)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 [![非医疗器械](https://img.shields.io/badge/%E5%AE%9A%E4%BD%8D-%E9%9D%9E%E5%8C%BB%E7%96%97%E5%99%A8%E6%A2%B0-orange)](#合规定位)
@@ -11,6 +11,13 @@
 
 打开后**无需上传任何真实数据**：内置 20 份代码生成的合成检验报告，选一份点「开始分析」即可走完
 从判读到解读的全流程（含 4 个危急值 case，可直接看到红色危急值提示与逐条判读依据）。
+
+<p align="center">
+  <img src="assets/lablens-about.png" alt="LabLens 项目视觉：检验报告与可追溯判读" width="100%">
+</p>
+
+> 这不是把一份报告丢给模型，让它自由发挥；而是先把结果、参考区间和判读依据固定下来，
+> 再把可验证的结果翻译成普通人看得懂的话。
 
 > ⚠️ **本工具是技术演示，不是医疗器械。** 输出内容由 AI 生成，仅供科普参考，
 > **不构成诊断、不构成用药或治疗建议，不能替代执业医师的判断**。如有异常请及时就诊。

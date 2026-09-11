@@ -59,21 +59,23 @@ DATA_DIR = ROOT / "data"
 SAMPLE_PATH = ROOT / "evals" / "synthetic" / "ground_truth.json"
 
 CHIPS = [
-    "数值判定 100% 确定性代码",
-    "没有参考区间就拒判",
+    "报告区间优先",
+    "规则可复核",
+    "缺依据则不判定",
     "字段级溯源",
-    "约束检索 + 拒答",
-    "输出护栏（代码级）",
+    "敏感数据默认不留存",
 ]
 
+ABOUT_IMAGE = ROOT / "assets" / "lablens-about.png"
+
 DISCLAIMER_HTML = (
-    "<b>AI 生成内容 · 仅供科普参考</b>　本工具不是医疗器械，"
+    "<b>AI 生成内容，仅供科普参考</b>　本工具不是医疗器械，"
     "不提供诊断、用药或治疗建议，不能替代执业医师的判断。"
 )
 
 st.set_page_config(
     page_title="LabLens · 检验报告解读",
-    page_icon="🔬",
+    page_icon="🧾",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -106,15 +108,14 @@ def get_samples() -> list[dict]:
 def sidebar() -> dict:
     with st.sidebar:
         st.markdown(
-            '<div style="font-size:1.16rem;font-weight:680;letter-spacing:-.01em">'
-            '🔬 LabLens</div>'
-            '<div style="font-size:.78rem;color:#94A3B8;margin-bottom:1rem">'
-            "中文检验报告智能体 · 技术演示</div>",
+            '<div class="ll-side-brand"><span class="ll-brand-mark">L</span>'
+            '<span class="ll-side-name">LabLens</span></div>'
+            '<div class="ll-side-sub">检验报告工作台 · 技术演示</div>',
             unsafe_allow_html=True,
         )
 
-        st.markdown("##### 模型")
-        options = ["（不使用模型 · 离线抽取式解读）"] + [p.label for p in PRESETS.values()]
+        st.markdown("##### 解释方式")
+        options = ["（离线参考 · 不调用模型）"] + [p.label for p in PRESETS.values()]
         keys: list[str | None] = [None] + list(PRESETS)
         choice = st.selectbox(
             "模型来源", options, index=1,
@@ -395,34 +396,41 @@ def render_trend_tab(report: LabReport) -> None:
 
 
 def render_about_tab(kb: KnowledgeBase, retriever: Retriever) -> None:
+    left, right = st.columns([1.12, 1], gap="large")
+    with left:
+        if ABOUT_IMAGE.is_file():
+            st.image(str(ABOUT_IMAGE), width="stretch")
+        else:
+            empty("🧾", "项目视觉素材将在这里展示")
+    with right:
+        st.markdown(
+            """
+<div class="ll-about-copy">
+  <div class="ll-about-kicker">ABOUT LABLENS / 设计说明</div>
+  <h2>先把依据摆在桌面上，再谈解释。</h2>
+  <p>LabLens 把检验报告里的结果、参考区间和判读依据放在同一个工作台里。它的重点不是“像医生一样说话”，而是让每个结论都能回到原始数据和明确规则。</p>
+  <p>没有可靠参考区间时，系统会停下来说明“不判定”。这是一款技术演示，不诊断疾病、不提供用药或治疗建议。</p>
+  <div class="ll-about-meta">
+    <div class="ll-about-fact"><b>95</b><span>指标字典</span></div>
+    <div class="ll-about-fact"><b>574</b><span>解释语料</span></div>
+    <div class="ll-about-fact"><b>218</b><span>自动化测试</span></div>
+    <div class="ll-about-fact"><b>0</b><span>危急值漏报</span></div>
+  </div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+    section("三条设计原则", "把安全边界做成产品的一部分")
     st.markdown(
         """
-### 这个工具做什么、不做什么
-
-**做**：把检验报告上的数值与它自己的参考区间逐项对照，判定偏高/偏低/危急，
-再把结果翻译成普通人能读懂的话，并给出建议向医生提问的清单。
-
-**不做**：不诊断疾病、不给用药或剂量建议、不做处方相关内容、不出具任何医疗文书。
-"""
-    )
-    section("三条设计上的硬约束")
-    st.markdown(
-        """
-**1. 数值判定完全去 LLM 化**
-高低判断、危急值识别、单位换算全部由确定性代码完成，可单测、可复现、可审计。
-依据：Meyer 等（*Frontiers in AI* 2025）在 24.6 万个参考区间上测得大模型自报区间的
-下限变异系数达 **26.5%**；Lab-AI 实测 GPT-4-turbo 无检索时参考区间检索准确率
-**仅 42.9%**。
-
-**2. 没有参考区间就拒绝判断**
-参考区间优先取自报告单本身（不同医院仪器试剂不同，区间本就不同），知识库只做兜底；
-两者都没有时系统明确拒绝判定，而不是猜一个"正常范围"。
-性别分层指标缺少性别信息时同样拒判——用任一性别的区间都会产生静默错误。
-
-**3. 输出护栏是代码而非提示词**
-诊断结论、用药与剂量、处方相关表述由正则确定性拦截
-（《互联网诊疗监管细则（试行）》第 13、21 条），不依赖模型自觉。
-"""
+<div class="ll-principle-grid">
+  <div class="ll-principle"><div class="num">01 / JUDGEMENT</div><b>判定交给规则</b><span>偏高、偏低、危急值和单位换算由确定性代码完成，可单测、可复现。</span></div>
+  <div class="ll-principle"><div class="num">02 / EVIDENCE</div><b>参考区间优先</b><span>报告单区间优先于知识库；两边都没有时，明确拒绝猜测。</span></div>
+  <div class="ll-principle"><div class="num">03 / RESTRAINT</div><b>输出保持克制</b><span>诊断、用药、剂量和处方相关表述由代码级护栏拦截。</span></div>
+</div>
+""",
+        unsafe_allow_html=True,
     )
 
     section("当前知识库")
@@ -436,7 +444,11 @@ def render_about_tab(kb: KnowledgeBase, retriever: Retriever) -> None:
 """
     )
 
-    section("评测")
+    section("评测结果")
+    st.markdown(
+        '<div class="ll-proof"><b>100.0%</b><span>生产路径准确率</span><b>0 项</b><span>危急值漏报（20 份合成报告 / 276 项）</span></div>',
+        unsafe_allow_html=True,
+    )
     st.markdown(
         """
 见 `evals/RESULTS.md`。头条指标是**危急值漏报率**而不是平均准确率——
@@ -466,15 +478,15 @@ def main() -> None:
     kb, retriever = get_kb(), get_retriever()
 
     hero(
-        "LabLens · 中文检验报告解读",
-        "数值判定 100% 由确定性代码完成，语言模型只负责把结果翻译成人话；"
-        "没有参考区间时，系统拒绝判断。",
+        "LabLens · 检验结果工作台",
+        "把报告上的结果、参考区间和判读依据放在同一张桌面上。"
+        "没有可靠区间，就不替你猜。",
         CHIPS,
     )
     disclaimer(DISCLAIMER_HTML)
 
     tab_input, tab_report, tab_interp, tab_trend, tab_about = st.tabs(
-        ["① 输入报告", "② 指标与判读依据", "③ 解读", "④ 趋势", "⑤ 关于"]
+        ["输入报告", "指标与判读依据", "结果解读", "趋势", "关于 LabLens"]
     )
 
     with tab_input:

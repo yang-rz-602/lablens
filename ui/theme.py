@@ -22,17 +22,17 @@ __all__ = ["COLORS", "SEVERITY_STYLE", "FLAG_STYLE", "inject_css", "HTML_HEAD"]
 # 设计令牌
 # --------------------------------------------------------------------------- #
 COLORS = {
-    "ink": "#0F172A",          # 主文字
-    "ink_soft": "#475569",     # 次级文字
-    "muted": "#94A3B8",        # 弱化文字
-    "line": "#E2E8F0",         # 分隔线
-    "line_soft": "#F1F5F9",
-    "surface": "#FFFFFF",      # 卡片
-    "canvas": "#F7F9FB",       # 页面底色
-    "brand": "#0D9488",        # 主色：深青
-    "brand_dark": "#0F766E",
-    "brand_soft": "#F0FDFA",
-    "brand_line": "#99F6E4",
+    "ink": "#202522",          # 主文字
+    "ink_soft": "#59635E",     # 次级文字
+    "muted": "#87908B",        # 弱化文字
+    "line": "#DDD9D0",         # 分隔线
+    "line_soft": "#F1EFE9",
+    "surface": "#FFFDF9",      # 卡片
+    "canvas": "#F5F2EC",       # 页面底色
+    "brand": "#176B65",        # 主色：沉稳的深青
+    "brand_dark": "#10534F",
+    "brand_soft": "#EDF5F2",
+    "brand_line": "#BBD8D1",
 }
 
 # 严重度 → 视觉（组件层统一从这里取色）
@@ -94,27 +94,36 @@ hr {{ border-color: {c['line']}; margin: 1.4rem 0; }}
 }}
 [data-testid="stSidebar"] .block-container {{ padding-top: 1.6rem; }}
 [data-testid="stSidebar"] hr {{ margin: .9rem 0; }}
+.ll-side-brand {{ display: flex; align-items: center; gap: .55rem; margin-bottom: .15rem; }}
+.ll-brand-mark {{
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.7rem; height: 1.7rem; border-radius: 6px;
+    background: {c['brand']}; color: #fff; font-size: .88rem; font-weight: 750;
+    letter-spacing: .02em;
+}}
+.ll-side-name {{ color: {c['ink']}; font-size: 1.1rem; font-weight: 720; letter-spacing: -.02em; }}
+.ll-side-sub {{ color: {c['muted']}; font-size: .77rem; margin: 0 0 1rem 2.25rem; }}
 
 /* ===================== 标签页 → 分段控件 ===================== */
 .stTabs [data-baseweb="tab-list"] {{
-    gap: .25rem; background: {c['line_soft']};
-    padding: .3rem; border-radius: 11px; border: 1px solid {c['line']};
+    gap: .9rem; background: transparent;
+    padding: 0; border-radius: 0; border: 0; border-bottom: 1px solid {c['line']};
 }}
 .stTabs [data-baseweb="tab-list"] button {{
-    border-radius: 8px; padding: .5rem 1.05rem; height: auto;
-    font-weight: 550; color: {c['ink_soft']}; background: transparent;
+    border-radius: 0; padding: .5rem .15rem .65rem; height: auto;
+    font-weight: 600; color: {c['ink_soft']}; background: transparent;
 }}
-.stTabs [data-baseweb="tab-list"] button:hover {{ background: rgba(13,148,136,.07); }}
+.stTabs [data-baseweb="tab-list"] button:hover {{ color: {c['brand_dark']}; background: transparent; }}
 .stTabs [aria-selected="true"] {{
-    background: {c['surface']} !important; color: {c['brand_dark']} !important;
-    box-shadow: 0 1px 2px rgba(15,23,42,.08);
+    background: transparent !important; color: {c['brand_dark']} !important;
+    box-shadow: inset 0 -2px 0 {c['brand']};
 }}
 .stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"] {{ display: none; }}
 .stTabs [data-baseweb="tab-panel"] {{ padding-top: 1.4rem; }}
 
 /* ===================== 按钮 ===================== */
 .stButton > button, .stDownloadButton > button {{
-    border-radius: 9px; font-weight: 550; border: 1px solid {c['line']};
+    border-radius: 7px; font-weight: 600; border: 1px solid {c['line']};
     padding: .5rem 1.1rem; transition: all .15s ease;
 }}
 .stButton > button[kind="primary"] {{
@@ -123,7 +132,7 @@ hr {{ border-color: {c['line']}; margin: 1.4rem 0; }}
 }}
 .stButton > button[kind="primary"]:hover {{
     background: {c['brand_dark']}; border-color: {c['brand_dark']};
-    box-shadow: 0 3px 10px rgba(13,148,136,.28); transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(23,107,101,.22); transform: translateY(-1px);
 }}
 .stButton > button:disabled {{ opacity: .45; }}
 
@@ -138,7 +147,7 @@ hr {{ border-color: {c['line']}; margin: 1.4rem 0; }}
 
 /* ===================== 展开面板 → 卡片 ===================== */
 [data-testid="stExpander"] {{
-    border: 1px solid {c['line']}; border-radius: 12px;
+    border: 1px solid {c['line']}; border-radius: 8px;
     background: {c['surface']}; overflow: hidden;
 }}
 [data-testid="stExpander"] summary {{ font-weight: 550; padding: .35rem 0; }}
@@ -149,15 +158,20 @@ hr {{ border-color: {c['line']}; margin: 1.4rem 0; }}
 [data-testid="stDataFrame"] {{
     border: 1px solid {c['line']}; border-radius: 12px; overflow: hidden;
 }}
+[data-testid="stImage"] img {{
+    border: 1px solid {c['line']}; border-radius: 8px;
+    box-shadow: 0 7px 24px rgba(42, 48, 43, .06);
+}}
 
 /* ===================== 提示条 ===================== */
 [data-testid="stAlert"] {{ border-radius: 11px; border-width: 1px; padding: .85rem 1rem; }}
 
 /* ===================== 自定义组件 ===================== */
 .ll-hero {{
-    background: linear-gradient(135deg, {c['surface']} 0%, {c['brand_soft']} 100%);
-    border: 1px solid {c['brand_line']};
-    border-radius: 16px; padding: 1.5rem 1.7rem; margin-bottom: 1.1rem;
+    background: {c['surface']}; border: 1px solid {c['line']};
+    border-left: 4px solid {c['brand']}; border-radius: 8px;
+    padding: 1.35rem 1.55rem; margin-bottom: 1.1rem;
+    box-shadow: 0 5px 18px rgba(42, 48, 43, .035);
 }}
 .ll-hero h1 {{
     margin: 0 0 .45rem 0 !important; font-size: 1.75rem !important;
@@ -167,9 +181,9 @@ hr {{ border-color: {c['line']}; margin: 1.4rem 0; }}
 .ll-chips {{ display: flex; flex-wrap: wrap; gap: .4rem; }}
 .ll-chip {{
     display: inline-flex; align-items: center; gap: .3rem;
-    background: {c['surface']}; border: 1px solid {c['brand_line']};
+    background: {c['canvas']}; border: 1px solid {c['line']};
     color: {c['brand_dark']}; font-size: .78rem; font-weight: 550;
-    padding: .22rem .6rem; border-radius: 999px;
+    padding: .22rem .6rem; border-radius: 4px;
 }}
 
 .ll-disclaimer {{
@@ -195,7 +209,7 @@ hr {{ border-color: {c['line']}; margin: 1.4rem 0; }}
 .ll-cards.c5 {{ grid-template-columns: repeat(5, 1fr); }}
 .ll-card {{
     background: {c['surface']}; border: 1px solid {c['line']};
-    border-radius: 13px; padding: .85rem 1rem; position: relative; overflow: hidden;
+    border-radius: 8px; padding: .85rem 1rem; position: relative; overflow: hidden;
 }}
 .ll-card::before {{
     content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
@@ -300,10 +314,50 @@ hr {{ border-color: {c['line']}; margin: 1.4rem 0; }}
     color: {c['brand_dark']}; line-height: 1.7;
 }}
 
+/* ===================== 关于页 ===================== */
+.ll-about-visual {{
+    border: 1px solid {c['line']}; border-radius: 8px; overflow: hidden;
+    background: {c['surface']}; box-shadow: 0 7px 24px rgba(42, 48, 43, .06);
+}}
+.ll-about-visual img {{ display: block; width: 100%; }}
+.ll-about-copy {{ padding: .3rem .15rem .3rem .5rem; }}
+.ll-about-kicker {{
+    color: {c['brand']}; font-size: .72rem; font-weight: 750;
+    letter-spacing: .12em; text-transform: uppercase; margin-bottom: .55rem;
+}}
+.ll-about-copy h2 {{ margin: 0 0 .55rem 0; font-size: 1.55rem !important; }}
+.ll-about-copy p {{ margin: 0 0 .9rem 0; font-size: .92rem; }}
+.ll-about-meta {{
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem;
+    margin-top: 1.1rem;
+}}
+.ll-about-fact {{ border-top: 1px solid {c['line']}; padding-top: .5rem; }}
+.ll-about-fact b {{ display: block; color: {c['ink']}; font-size: 1.15rem; }}
+.ll-about-fact span {{ color: {c['muted']}; font-size: .76rem; }}
+.ll-principle-grid {{
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; margin: .2rem 0 1.2rem;
+}}
+.ll-principle {{
+    background: {c['surface']}; border: 1px solid {c['line']}; border-radius: 8px;
+    padding: .9rem 1rem; min-height: 7.5rem;
+}}
+.ll-principle .num {{ color: {c['brand']}; font-size: .72rem; font-weight: 750; letter-spacing: .08em; }}
+.ll-principle b {{ display: block; color: {c['ink']}; margin: .35rem 0 .3rem; }}
+.ll-principle span {{ color: {c['ink_soft']}; font-size: .82rem; line-height: 1.65; }}
+.ll-proof {{
+    display: flex; flex-wrap: wrap; gap: .65rem 1.4rem; align-items: center;
+    background: {c['brand_soft']}; border: 1px solid {c['brand_line']}; border-radius: 8px;
+    padding: .85rem 1rem; margin-bottom: .5rem;
+}}
+.ll-proof b {{ color: {c['brand_dark']}; font-size: 1.18rem; }}
+.ll-proof span {{ color: {c['ink_soft']}; font-size: .82rem; }}
+
 @media (max-width: 900px) {{
     .ll-cards.c5 {{ grid-template-columns: repeat(2, 1fr); }}
     .ll-cards.c3 {{ grid-template-columns: 1fr; }}
     .ll-hero {{ padding: 1.15rem 1.25rem; }}
+    .ll-principle-grid {{ grid-template-columns: 1fr; }}
+    .ll-about-copy {{ padding: 1rem 0 0; }}
 }}
 </style>
 """
