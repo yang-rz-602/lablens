@@ -284,25 +284,26 @@ GB/T 39725-2020 要求健康医疗数据"不宜存储在境外服务器"；
 
 ```
 lablens/
-├── core/
-│   ├── schema.py        三层数据契约（抽取 / 领域对象 / 解读），Pydantic 强校验
-│   ├── units.py         单位归一与解析（纯函数）
-│   ├── rules.py         ★ 唯一的数值判定层
-│   ├── retriever.py     约束检索 + 拒答
-│   ├── providers/       LLM 传输层（OpenAI 兼容 + 离线夹具）
-│   ├── extract.py       Stage 1 抽取
-│   ├── explain.py       Stage 3 解释
-│   ├── guard.py         ★ 输出护栏（正则确定性拦截）
-│   └── store.py         趋势存储（默认关闭）
+├── core/                ★ 后端：判读 / 检索 / 解释 / 护栏 / 单位 / 存储
+├── ui/                  界面设计系统（设计令牌 + 纯函数组件，可单测）
 ├── data/                KB-1 指标字典 + KB-3 解释语料
 ├── evals/               合成评测集 + 评测脚本 + RESULTS.md
-├── tests/               163 个单测
+├── tests/               218 个测试（含 20 个 AppTest 端到端界面测试）
 ├── docs/                部署文档（魔搭创空间）
 ├── scripts/             一键部署脚本
 ├── requirements.txt     创空间依赖清单（平台不读 pyproject.toml）
 ├── mcp_server.py        MCP 封装（零依赖）
-└── app.py               Streamlit 界面
+└── app.py               Streamlit 界面入口
 ```
+
+### 界面
+
+界面层刻意与业务逻辑分离：`ui/theme.py` 放设计令牌与全局样式，
+`ui/components.py` 是纯函数组件（数据 → HTML 字符串）。这样组件**不需要浏览器就能被单测覆盖**，
+`app.py` 只负责编排。
+
+端到端则用 Streamlit 官方的 `AppTest` 在同进程里跑真实脚本，断言"零异常 + 危急值被识别 +
+输出通过合规护栏"——**不需要浏览器**，所以 CI 里也能跑。
 
 ---
 
