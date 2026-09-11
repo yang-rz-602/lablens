@@ -37,3 +37,6 @@ Thumbs.db
 
 # 本地截图用的浏览器 profile
 .chrome-profile/
+
+# 测试/运行的临时目录（沙箱下系统临时目录不可写）
+.tmp/
