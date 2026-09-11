@@ -1,0 +1,1242 @@
+# LabLens 结构化指标字典 —— 生化 / 免疫 / 凝血部分
+#
+# 用途：作为 core.rules 规则引擎的"内置知识库"（RefSource.KNOWLEDGE_BASE），
+#       当报告单本身没有印参考区间，或需要判定危急值时使用。
+#
+# 数据来源优先级：
+#   1. WS/T 404 系列《临床常用生化检验项目参考区间》（中国卫生行业标准）
+#        - WS/T 404.1-2012  本次采用：ALT / AST / GGT / ALP / TBIL / DBIL / IBIL / TP / ALB
+#        - WS/T 404.2-2012  本次采用：CREA / UA
+#        - WS/T 404.3-2012  本次采用：TC / TG / HDL-C / LDL-C / APOA1 / APOB / Lp(a)
+#      （注意：WS/T 404 各分册采用"双侧 95% 分布区间"的下/上限，与厂商说明书
+#        及多数医院 LIS 打印区间可能存在小幅差异，属正常现象。）
+#   2. 无对应卫生行业标准的项目，标注 "临床检验操作规程/各院检验科公示区间"。
+#
+# 字段约定：
+#   ref.default  —— 通用区间；未标注性别的报告使用它
+#   ref.M / ref.F —— 仅当男女区间不同才写；女性专属/男性专属项目另一方写 null
+#   ref.* 的 low 为 null 表示只有上限（如 eGFR、HDL-C、Lp(a)、ESR 的"≤"型区间）
+#   critical    —— 危急值阈值；null 表示该项目无公认危急值标准，不得推断
+#   qualitative —— 是否为定性项目（本文件全部为定量项目，均为 false）
+#
+# 免责声明：本字典仅用于检验结果的机械判定（H/L/危急），不构成诊断依据。
+# 各医疗机构应以本机构 LIS 打印区间为最终准绳（RefSource.REPORT 优先）。
+
+# =========================================================================== #
+# 肝功能（WS/T 404.1-2012）
+# =========================================================================== #
+- canonical_name: alt
+  name_zh: 丙氨酸氨基转移酶
+  aliases: [ALT, GPT, 谷丙转氨酶, 丙氨酸氨基转移酶, 丙氨酸转氨酶]
+  loinc: "1742-6"
+  category: 肝功能
+  specimen: 血清
+  unit_canonical: U/L
+  decimals: 0
+  qualitative: false
+  ref:
+    default: {low: 9, high: 50}
+    M: {low: 9, high: 50}
+    F: {low: 7, high: 40}
+  critical: {low: null, high: 500.0}
+  unit_conversions:
+    - {from: "IU/L", factor: 1.0}
+    - {from: "μkat/L", factor: 60.0}
+  source: "WS/T 404.1-2012"
+  note: "参考区间按性别分层；剧烈运动、饮酒、熬夜可致一过性升高。危急值阈值（>500 U/L）为常见设置，**各实验室阈值不同，须按本院规定配置**。"
+
+- canonical_name: ast
+  name_zh: 天门冬氨酸氨基转移酶
+  aliases: [AST, GOT, 谷草转氨酶, 天门冬氨酸氨基转移酶, 门冬氨酸氨基转移酶]
+  loinc: "1920-8"
+  category: 肝功能
+  specimen: 血清
+  unit_canonical: U/L
+  decimals: 0
+  qualitative: false
+  ref:
+    default: {low: 15, high: 40}
+    M: {low: 15, high: 40}
+    F: {low: 13, high: 35}
+  critical: {low: null, high: 500.0}
+  unit_conversions:
+    - {from: "IU/L", factor: 1.0}
+  source: "WS/T 404.1-2012"
+  note: "AST 亦存在于心肌与骨骼肌，单纯 AST 升高需结合 CK、LDH 判断来源。危急值阈值（>500 U/L）为常见设置，**各实验室阈值不同，须按本院规定配置**。"
+
+- canonical_name: ggt
+  name_zh: γ-谷氨酰转移酶
+  aliases: [GGT, γ-GT, r-GT, 谷氨酰转肽酶, γ-谷氨酰转肽酶, 谷氨酰转移酶]
+  loinc: "2324-2"
+  category: 肝功能
+  specimen: 血清
+  unit_canonical: U/L
+  decimals: 0
+  qualitative: false
+  ref:
+    default: {low: 10, high: 60}
+    M: {low: 10, high: 60}
+    F: {low: 7, high: 45}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "IU/L", factor: 1.0}
+  source: "WS/T 404.1-2012"
+  note: "对酒精性与胆汁淤积性肝损伤较敏感；吸烟、饮酒、肥胖可致轻度升高。"
+
+- canonical_name: alp
+  name_zh: 碱性磷酸酶
+  aliases: [ALP, AKP, 碱性磷酸酶]
+  loinc: "6768-6"
+  category: 肝功能
+  specimen: 血清
+  unit_canonical: U/L
+  decimals: 0
+  qualitative: false
+  ref:
+    default: {low: 45, high: 125}
+    M: {low: 45, high: 125}
+    F: {low: 35, high: 100}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "IU/L", factor: 1.0}
+  source: "WS/T 404.1-2012"
+  note: "本区间为成人（≥18 岁）。儿童青少年因骨骼生长期 ALP 生理性升高（1-12 岁可达 100-400 U/L，青春期峰值更高），不可用成人区间判定；妊娠中晚期亦升高。"
+
+- canonical_name: tbil
+  name_zh: 总胆红素
+  aliases: [TBIL, T-BIL, TBil, 总胆红素, 胆红素总量, STB]
+  loinc: "1975-2"
+  category: 肝功能
+  specimen: 血清
+  unit_canonical: μmol/L
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 5.1, high: 22.2}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 17.1}
+    - {from: "μmol/L", factor: 0.0585}
+  source: "WS/T 404.1-2012"
+  note: "新生儿生理性黄疸区间完全不同，本区间仅适用于成人。"
+
+- canonical_name: dbil
+  name_zh: 直接胆红素
+  aliases: [DBIL, D-BIL, DBil, 结合胆红素, 直接胆红素]
+  loinc: "1968-7"
+  category: 肝功能
+  specimen: 血清
+  unit_canonical: μmol/L
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 0.0, high: 6.8}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 17.1}
+  source: "WS/T 404.1-2012"
+  note: null
+
+- canonical_name: ibil
+  name_zh: 间接胆红素
+  aliases: [IBIL, I-BIL, IBil, 非结合胆红素, 间接胆红素, 游离胆红素]
+  loinc: "1971-1"
+  category: 肝功能
+  specimen: 血清
+  unit_canonical: μmol/L
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 0.0, high: 18.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 17.1}
+  source: "WS/T 404.1-2012"
+  note: "多为计算值（总胆红素 − 直接胆红素），部分实验室不单独报告。"
+
+- canonical_name: tp
+  name_zh: 总蛋白
+  aliases: [TP, T-PROT, 总蛋白, 血清总蛋白]
+  loinc: "2885-2"
+  category: 肝功能
+  specimen: 血清
+  unit_canonical: g/L
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 65.0, high: 85.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "g/dL", factor: 10.0}
+  source: "WS/T 404.1-2012"
+  note: "卧位采血可因血液稀释偏低约 3-5 g/L，止血带久扎则偏高。"
+
+- canonical_name: alb
+  name_zh: 白蛋白
+  aliases: [ALB, Alb, 白蛋白, 血清白蛋白, 清蛋白]
+  loinc: "1751-7"
+  category: 肝功能
+  specimen: 血清
+  unit_canonical: g/L
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 40.0, high: 55.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "g/dL", factor: 10.0}
+  source: "WS/T 404.1-2012"
+  note: "半衰期约 20 天，急性肝损伤早期可正常；低白蛋白也见于肾病性丢失与营养不良。"
+
+- canonical_name: globulin
+  name_zh: 球蛋白
+  aliases: [GLB, GLOB, 球蛋白, 血清球蛋白]
+  loinc: "2336-6"
+  category: 肝功能
+  specimen: 血清
+  unit_canonical: g/L
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 20.0, high: 35.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "g/dL", factor: 10.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "多为计算值（总蛋白 − 白蛋白），部分实验室不单独报告。"
+
+- canonical_name: a_g_ratio
+  name_zh: 白球比
+  aliases: [A/G, A:G, 白球比, 白球比值, 白蛋白/球蛋白]
+  loinc: "1759-0"
+  category: 肝功能
+  specimen: 血清
+  unit_canonical: ""
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 1.2, high: 2.4}
+  critical: {low: null, high: null}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "计算值（白蛋白 ÷ 球蛋白），无单位；比例倒置常见于慢性肝病与球蛋白增多的免疫性疾病。"
+
+# =========================================================================== #
+# 肾功能（WS/T 404.2-2012 覆盖 CREA / UA）
+# =========================================================================== #
+- canonical_name: bun
+  name_zh: 尿素
+  aliases: [BUN, Urea, 尿素, 尿素氮, 血尿素氮]
+  loinc: "3094-0"
+  category: 肾功能
+  specimen: 血清
+  unit_canonical: mmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 2.9, high: 8.2}
+    M: {low: 3.1, high: 8.0}
+    F: {low: 2.6, high: 7.5}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 0.357}
+    - {from: "mmol/L", factor: 2.8}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "国内多报尿素（Urea, mmol/L）。若报告单位为 mg/dL 且项名为 BUN，则其为尿素氮，换算系数为 0.357 后得到 mmol/L 尿素；若报 Urea nitrogen 需按氮含量换算，勿与 Urea 混用。高蛋白饮食、消化道出血、脱水可升高。"
+
+- canonical_name: crea
+  name_zh: 肌酐
+  aliases: [CREA, Cr, SCr, 肌酐, 血肌酐]
+  loinc: "2160-0"
+  category: 肾功能
+  specimen: 血清
+  unit_canonical: μmol/L
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 57, high: 97}
+    M: {low: 57, high: 97}
+    F: {low: 41, high: 73}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 88.4}
+    - {from: "μmol/L", factor: 0.0113}
+  source: "WS/T 404.2-2012"
+  note: "参考区间按性别分层。肌酐受肌肉量影响明显，健美人群可高于区间、老年消瘦者可低于区间而肾功能已下降，须结合 eGFR 判断。"
+
+- canonical_name: ua
+  name_zh: 尿酸
+  aliases: [UA, URIC, 尿酸, 血尿酸]
+  loinc: "3084-1"
+  category: 肾功能
+  specimen: 血清
+  unit_canonical: μmol/L
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 208, high: 428}
+    M: {low: 208, high: 428}
+    F: {low: 155, high: 357}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 59.48}
+    - {from: "μmol/L", factor: 0.0168}
+  source: "WS/T 404.2-2012"
+  note: "参考区间按性别分层。受近期高嘌呤饮食、饮酒、剧烈运动影响，单次轻度升高不等于痛风。"
+
+- canonical_name: egfr
+  name_zh: 估算肾小球滤过率
+  aliases: [eGFR, GFR, 肾小球滤过率, 估算肾小球滤过率, e-GFR]
+  loinc: "98979-8"
+  category: 肾功能
+  specimen: 血清
+  unit_canonical: mL/min/1.73m2
+  decimals: 0
+  qualitative: false
+  ref:
+    default: {low: 90, high: null}
+  critical: {low: null, high: null}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "计算值（由肌酐、年龄、性别经 CKD-EPI 类公式得出），非直接测定。KDIGO 分级：≥90 为 G1，60-89 为 G2，45-59 为 G3a，30-44 为 G3b，15-29 为 G4，<15 为 G5。单次 <60 需 3 个月后复查方可判定慢性肾功能下降；不同公式结果不等价。"
+
+- canonical_name: cysc
+  name_zh: 胱抑素C
+  aliases: [CysC, Cys-C, Cystatin C, 胱抑素C, 半胱氨酸蛋白酶抑制剂C]
+  loinc: "33863-2"
+  category: 肾功能
+  specimen: 血清
+  unit_canonical: mg/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 0.51, high: 1.09}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 10.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "较肌酐更少受肌肉量影响，可用于早期肾功能下降的辅助评估；甲状腺功能异常与糖皮质激素可影响其水平。"
+
+# =========================================================================== #
+# 血糖血脂（WS/T 404.3-2012 覆盖 TC / TG / HDL-C / LDL-C / APOA1 / APOB / Lp(a)）
+# =========================================================================== #
+- canonical_name: glu
+  name_zh: 葡萄糖
+  aliases: [GLU, Glu, BG, FPG, 葡萄糖, 血糖, 空腹血糖]
+  loinc: "2345-7"
+  category: 血糖血脂
+  specimen: 血清
+  unit_canonical: mmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 3.9, high: 6.1}
+  critical: {low: 2.8, high: 22.2}
+  unit_conversions:
+    - {from: "mg/dL", factor: 0.0555}
+    - {from: "mmol/L", factor: 18.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "空腹参考区间 3.9-6.1 mmol/L；6.1-7.0 为空腹血糖受损，≥7.0（两次）达糖尿病诊断切点。标本放置过久因红细胞耗糖可使结果假性偏低，须 2 小时内分离血清。危急值采用低 2.8 / 高 22.2 mmol/L。"
+
+- canonical_name: hba1c
+  name_zh: 糖化血红蛋白
+  aliases: [HbA1c, HBA1C, GHb, 糖化血红蛋白, 糖化血红蛋白A1c]
+  loinc: "4548-4"
+  category: 血糖血脂
+  specimen: 全血
+  unit_canonical: "%"
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 4.0, high: 6.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mmol/mol", factor: 0.0915}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "反映近 2-3 个月平均血糖。多数方法学参考区间为 4%-6%（IFCC 单位 mmol/mol 需换算）。贫血、近期输血、异常血红蛋白病、妊娠可致假性偏低；缺铁性贫血可假性偏高。"
+
+- canonical_name: tc
+  name_zh: 总胆固醇
+  aliases: [TC, CHOL, TCHO, 总胆固醇, 胆固醇]
+  loinc: "2093-3"
+  category: 血糖血脂
+  specimen: 血清
+  unit_canonical: mmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 5.18}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 0.0259}
+  source: "WS/T 404.3-2012"
+  note: "WS/T 404.3 给出中国成人表观健康人群参考区间；血脂指标临床更常按心血管风险分层设目标值（中国血脂管理指南：合适水平 <5.2 mmol/L）。"
+
+- canonical_name: tg
+  name_zh: 甘油三酯
+  aliases: [TG, TRIG, 甘油三酯, 三酰甘油]
+  loinc: "2571-8"
+  category: 血糖血脂
+  specimen: 血清
+  unit_canonical: mmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 1.70}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 0.0113}
+  source: "WS/T 404.3-2012"
+  note: "指南合适水平 <1.7 mmol/L；≥5.6 mmol/L 显著升高需警惕急性胰腺炎风险。须空腹 12 小时以上采血，饮酒与高脂餐后结果不可比。"
+
+- canonical_name: hdl_c
+  name_zh: 高密度脂蛋白胆固醇
+  aliases: [HDL-C, HDL, HDLC, 高密度脂蛋白, 高密度脂蛋白胆固醇]
+  loinc: "2085-9"
+  category: 血糖血脂
+  specimen: 血清
+  unit_canonical: mmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 1.00, high: null}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 0.0259}
+  source: "WS/T 404.3-2012"
+  note: "为\"下限型\"指标，越低风险越高（指南：<1.0 mmol/L 为低 HDL-C）。目前无公认危急值。"
+
+- canonical_name: ldl_c
+  name_zh: 低密度脂蛋白胆固醇
+  aliases: [LDL-C, LDL, LDLC, 低密度脂蛋白, 低密度脂蛋白胆固醇]
+  loinc: "13457-7"
+  category: 血糖血脂
+  specimen: 血清
+  unit_canonical: mmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 3.37}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 0.0259}
+  source: "WS/T 404.3-2012"
+  note: "合适水平 <3.4 mmol/L，但临床干预目标按动脉粥样硬化性心血管疾病风险分层（极高危可要求 <1.4 mmol/L），不可仅凭参考区间判断是否达标。TG <4.5 mmol/L 时可用 Friedewald 公式估算。"
+
+- canonical_name: apoa1
+  name_zh: 载脂蛋白A1
+  aliases: [APOA1, ApoA1, Apo-A1, 载脂蛋白A1, 载脂蛋白A-1]
+  loinc: "1869-7"
+  category: 血糖血脂
+  specimen: 血清
+  unit_canonical: g/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 1.20, high: 1.60}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 0.01}
+  source: "WS/T 404.3-2012"
+  note: "HDL 主要结构蛋白，与 HDL-C 同向变化。"
+
+- canonical_name: apob
+  name_zh: 载脂蛋白B
+  aliases: [APOB, ApoB, Apo-B, 载脂蛋白B, 载脂蛋白B100]
+  loinc: "1884-6"
+  category: 血糖血脂
+  specimen: 血清
+  unit_canonical: g/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 0.60, high: 1.10}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 0.01}
+  source: "WS/T 404.3-2012"
+  note: "反映致动脉粥样硬化颗粒总数，部分指南将其作为优于 LDL-C 的风险指标。"
+
+- canonical_name: lpa
+  name_zh: 脂蛋白(a)
+  aliases: [Lp(a), LPA, LP(a), 脂蛋白a, 脂蛋白(a)]
+  loinc: "43584-2"
+  category: 血糖血脂
+  specimen: 血清
+  unit_canonical: mg/L
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: null, high: 300.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 10.0}
+  source: "WS/T 404.3-2012"
+  note: "水平主要由遗传决定，一生相对稳定，不受饮食影响。注意各实验室报告单位不统一（mg/L 与 nmol/L 不可直接按固定系数互换，因 Apo(a) 异构体大小不同），比较时应使用同一实验室同一方法。无公认危急值。"
+
+# =========================================================================== #
+# 电解质
+# =========================================================================== #
+- canonical_name: k
+  name_zh: 钾
+  aliases: [K, K+, 钾, 血钾, 血清钾]
+  loinc: "2823-3"
+  category: 电解质
+  specimen: 血清
+  unit_canonical: mmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 3.50, high: 5.30}
+  critical: {low: 2.80, high: 6.20}
+  unit_conversions:
+    - {from: "mEq/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "危急值：<2.8 或 >6.2 mmol/L。采血后溶血、标本久置、用力握拳可使结果假性升高（假性高钾），报危急值前须先排除标本因素。血浆钾略高于血清。"
+
+- canonical_name: na
+  name_zh: 钠
+  aliases: [Na, Na+, 钠, 血钠, 血清钠]
+  loinc: "2951-2"
+  category: 电解质
+  specimen: 血清
+  unit_canonical: mmol/L
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 137.0, high: 147.0}
+  critical: {low: 120.0, high: 160.0}
+  unit_conversions:
+    - {from: "mEq/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "危急值：<120 或 >160 mmol/L。血钠异常主要反映水钠平衡紊乱而非钠总量；同时须结合血糖校正（高血糖致假性低钠）。"
+
+- canonical_name: cl
+  name_zh: 氯
+  aliases: [Cl, Cl-, 氯, 血氯, 氯化物]
+  loinc: "2075-0"
+  category: 电解质
+  specimen: 血清
+  unit_canonical: mmol/L
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 99.0, high: 110.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mEq/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "常与钠同向变化，用于计算阴离子间隙并鉴别代谢性酸中毒类型。无公认单独危急值。"
+
+- canonical_name: ca
+  name_zh: 钙
+  aliases: [Ca, Ca2+, 钙, 血钙, 总钙, 血清钙]
+  loinc: "17861-6"
+  category: 电解质
+  specimen: 血清
+  unit_canonical: mmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 2.11, high: 2.52}
+  critical: {low: 1.60, high: 3.50}
+  unit_conversions:
+    - {from: "mg/dL", factor: 0.25}
+    - {from: "mmol/L", factor: 4.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "危急值按总钙：<1.6 或 >3.5 mmol/L。本项为总钙，受白蛋白影响显著，低白蛋白时总钙偏低而离子钙可正常；必要时报告校正钙或直接测离子钙。采血时止血带久扎可使结果偏高。"
+
+- canonical_name: p
+  name_zh: 无机磷
+  aliases: [P, IP, PHOS, 磷, 无机磷, 血磷, 磷酸盐]
+  loinc: "2777-1"
+  category: 电解质
+  specimen: 血清
+  unit_canonical: mmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 0.81, high: 1.45}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 0.323}
+    - {from: "mmol/L", factor: 3.1}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "成人区间 0.81-1.45 mmol/L；儿童生理性偏高。结果受进食与采血时间影响，须空腹；溶血标本因红细胞内磷释放而假性升高。无公认危急值。"
+
+- canonical_name: mg
+  name_zh: 镁
+  aliases: [Mg, Mg2+, 镁, 血镁, 血清镁]
+  loinc: "2601-3"
+  category: 电解质
+  specimen: 血清
+  unit_canonical: mmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 0.75, high: 1.02}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 0.4114}
+    - {from: "mEq/L", factor: 0.5}
+    - {from: "mmol/L", factor: 2.43}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "血清镁仅占体内镁约 1%，正常不能排除总体镁缺乏。与钾、钙代谢相互关联，顽固低钾/低钙时应考虑低镁。无公认危急值。"
+
+- canonical_name: co2
+  name_zh: 二氧化碳结合力
+  aliases: [CO2, CO2CP, HCO3-, 二氧化碳, 二氧化碳结合力, 碳酸氢根, 总二氧化碳]
+  loinc: "1963-8"
+  category: 电解质
+  specimen: 血清
+  unit_canonical: mmol/L
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 22.0, high: 29.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mEq/L", factor: 1.0}
+    - {from: "vol%", factor: 0.4492}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "通常为计算或测得的总二氧化碳（近似 HCO3-）。标本接触空气或久置会因 CO2 逸出而假性偏低，须及时密封送检。无公认危急值。"
+
+# =========================================================================== #
+# 心肌酶与心标
+# =========================================================================== #
+- canonical_name: ck
+  name_zh: 肌酸激酶
+  aliases: [CK, CPK, 肌酸激酶, 磷酸肌酸激酶]
+  loinc: "2157-6"
+  category: 心肌酶与心标
+  specimen: 血清
+  unit_canonical: U/L
+  decimals: 0
+  qualitative: false
+  ref:
+    default: {low: 50, high: 310}
+    M: {low: 50, high: 310}
+    F: {low: 40, high: 200}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "IU/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "骨骼肌含量远高于心肌，剧烈运动、肌肉注射、外伤、他汀相关肌病、抽搐均可显著升高，特异性低，须结合 CK-MB、肌钙蛋白判断。"
+
+- canonical_name: ckmb
+  name_zh: 肌酸激酶MB同工酶
+  aliases: [CK-MB, CKMB, 肌酸激酶同工酶, 肌酸激酶MB同工酶, CK-MB质量]
+  loinc: "13969-1"
+  category: 心肌酶与心标
+  specimen: 血清
+  unit_canonical: μg/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 5.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "ng/mL", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "存在两种报告方式：质量法（μg/L，多数医院，正常 <5 μg/L）与活性法（U/L，正常参考约 <24 U/L），二者不可直接比较。本字典采用质量法；若报告为 U/L 需按该实验室区间判定。"
+
+- canonical_name: ldh
+  name_zh: 乳酸脱氢酶
+  aliases: [LDH, LDH-L, LD, 乳酸脱氢酶, 乳酸脱氢酶同工酶]
+  loinc: "2532-0"
+  category: 心肌酶与心标
+  specimen: 血清
+  unit_canonical: U/L
+  decimals: 0
+  qualitative: false
+  ref:
+    default: {low: 120, high: 250}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "IU/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "广泛分布于肝、心、骨骼肌、红细胞与多种肿瘤，特异性低。溶血标本因红细胞内 LDH 释放而显著假性升高，是最常见的干扰。不同方法学（乳酸底物法 / 丙酮酸底物法）区间差异可达 2 倍。"
+
+- canonical_name: hbdh
+  name_zh: α-羟丁酸脱氢酶
+  aliases: [HBDH, α-HBDH, HBD, 羟丁酸脱氢酶, α-羟丁酸脱氢酶]
+  loinc: null
+  category: 心肌酶与心标
+  specimen: 血清
+  unit_canonical: U/L
+  decimals: 0
+  qualitative: false
+  ref:
+    default: {low: 72, high: 182}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "IU/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "主要反映 LDH1/LDH2 活性，过去用于心肌损伤辅助判断，现已基本被肌钙蛋白取代。溶血可致假性升高。该项目的 LOINC 映射不明确（常与 LDH 共用或缺少独立编码），故 loinc 置为 null，不臆造编码。"
+
+- canonical_name: ctni
+  name_zh: 心肌肌钙蛋白I
+  aliases: [cTnI, CTNI, TNI, 肌钙蛋白I, 心肌肌钙蛋白I, 高敏肌钙蛋白I, hs-cTnI]
+  loinc: "10839-9"
+  category: 心肌酶与心标
+  specimen: 血清
+  unit_canonical: ng/mL
+  decimals: 3
+  qualitative: false
+  ref:
+    default: {low: null, high: 0.034}
+  critical: {low: null, high: 1.0}
+  unit_conversions:
+    - {from: "μg/L", factor: 1.0}
+    - {from: "pg/mL", factor: 0.001}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "99th 百分位上限（URL）依平台与性别而异（高敏法约 0.012-0.034 ng/mL，女性低于男性），须以本实验室方法学上限为准；本值取常见平台参考。危急值：>1.0 ng/mL 提示明显心肌损伤，须立即临床处理。升高也见于心肌炎、肺栓塞、心力衰竭、肾功能不全与脓毒症，不能单独诊断心肌梗死；诊断应依据症状 + 动态变化（0/1h 或 0/3h）+ 心电图。"
+
+- canonical_name: nt_probnp
+  name_zh: N末端B型利钠肽原
+  aliases: [NT-proBNP, NT-PROBNP, NTPROBNP, N末端脑钠肽前体, N末端B型利钠肽原, 氨基末端脑钠肽前体, N末端B型利钠肽前体, B型利钠肽前体, proBNP]
+  loinc: "33762-6"
+  category: 心肌酶与心标
+  specimen: 血清
+  unit_canonical: pg/mL
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: null, high: 125.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "ng/L", factor: 1.0}
+    - {from: "pmol/L", factor: 8.457}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "排除心力衰竭的切点随年龄升高：<50 岁 <300、50-75 岁 <900、>75 岁 <1800 pg/mL（急性呼吸困难时）；门诊排除心衰常用 <125 pg/mL。肾功能不全时基线升高，需按年龄与 eGFR 个体化解读。无公认危急值。"
+
+# =========================================================================== #
+# 炎症
+# =========================================================================== #
+- canonical_name: crp
+  name_zh: C反应蛋白
+  aliases: [CRP, C-RP, C反应蛋白, 超敏C反应蛋白(普通法)]
+  loinc: "1988-5"
+  category: 炎症
+  specimen: 血清
+  unit_canonical: mg/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 8.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 10.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "急性时相反应蛋白，感染、创伤、手术后 6-8 小时开始升高，48 小时达峰。轻度升高（10-50 mg/L）多见于轻中度感染或非感染性炎症，特异性不高。许多实验室不设上限（报 <8 或 <10 mg/L）。"
+
+- canonical_name: hscrp
+  name_zh: 超敏C反应蛋白
+  aliases: [hs-CRP, hsCRP, HSCRP, 超敏C反应蛋白, 高敏C反应蛋白]
+  loinc: "30522-7"
+  category: 炎症
+  specimen: 血清
+  unit_canonical: mg/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 3.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 10.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "测下限更低，用于评估心血管风险分层：<1.0 低危、1.0-3.0 中危、>3.0 高危（须在无急性感染/炎症状态下检测）。急性感染时应改用普通 CRP 判读。"
+
+- canonical_name: pct
+  name_zh: 降钙素原
+  aliases: [PCT, ProCT, 降钙素原]
+  loinc: "33959-8"
+  category: 炎症
+  specimen: 血清
+  unit_canonical: ng/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 0.05}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "μg/L", factor: 1.0}
+    - {from: "pg/mL", factor: 0.001}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "健康人 <0.05 ng/mL；<0.5 提示细菌感染可能性低，≥0.5 需结合临床，≥2 提示脓毒症风险较高。病毒性感染、局灶性感染可不高；严重创伤、大手术后、重度烧伤可非感染性升高。肾功能不全者清除减慢。"
+
+- canonical_name: esr
+  name_zh: 红细胞沉降率
+  aliases: [ESR, 血沉, 红细胞沉降率]
+  loinc: "4537-7"
+  category: 炎症
+  specimen: 全血
+  unit_canonical: mm/h
+  decimals: 0
+  qualitative: false
+  ref:
+    default: {low: null, high: 15}
+    M: {low: null, high: 15}
+    F: {low: null, high: 20}
+  critical: {low: null, high: null}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "魏氏法：男性 ≤15 mm/h，女性 ≤20 mm/h；50 岁以上人群正常上限约再增加 5-10 mm/h。反应慢（24-48 小时开始升高、数周恢复），优于随访而非急性判断。贫血、妊娠、高球蛋白血症可致假性升高。"
+
+# =========================================================================== #
+# 甲状腺
+# =========================================================================== #
+- canonical_name: tsh
+  name_zh: 促甲状腺激素
+  aliases: [TSH, 促甲状腺激素, 促甲状腺素, 超敏促甲状腺激素]
+  loinc: "3016-3"
+  category: 甲状腺
+  specimen: 血清
+  unit_canonical: mIU/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 0.27, high: 4.20}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "μIU/mL", factor: 1.0}
+    - {from: "mU/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "多数方法学参考区间约 0.27-4.20 mIU/L。妊娠期参考区间按孕周显著降低（孕早期上限约 2.5-4.0 mIU/L，依试剂说明书），不可用普通成人区间判定孕妇。甲状腺功能判断应以 TSH 为首要指标，联合 FT4/FT3。"
+
+- canonical_name: ft3
+  name_zh: 游离三碘甲状腺原氨酸
+  aliases: [FT3, 游离T3, 游离三碘甲状腺原氨酸]
+  loinc: "3051-0"
+  category: 甲状腺
+  specimen: 血清
+  unit_canonical: pmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 3.10, high: 6.80}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "ng/L", factor: 1.536}
+    - {from: "pmol/L", factor: 0.651}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "参考区间依方法学差异较大（部分平台报 3.1-6.8 pmol/L，亦有 2.6-5.7 等），须以本实验室区间为准。"
+
+- canonical_name: ft4
+  name_zh: 游离甲状腺素
+  aliases: [FT4, 游离T4, 游离甲状腺素]
+  loinc: "3024-7"
+  category: 甲状腺
+  specimen: 血清
+  unit_canonical: pmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 12.0, high: 22.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "ng/dL", factor: 12.87}
+    - {from: "pmol/L", factor: 0.0777}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "妊娠期因 TBG 升高，参考区间按孕周另行制定。严重疾病（低 T3/T4 综合征）可致 FT4 假性偏低。"
+
+- canonical_name: t3
+  name_zh: 总三碘甲状腺原氨酸
+  aliases: [T3, TT3, 总T3, 三碘甲状腺原氨酸, 总三碘甲状腺原氨酸]
+  loinc: "3053-6"
+  category: 甲状腺
+  specimen: 血清
+  unit_canonical: nmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 1.30, high: 3.10}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "ng/mL", factor: 1.536}
+    - {from: "ng/dL", factor: 0.01536}
+    - {from: "nmol/L", factor: 0.651}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "妊娠、口服避孕药、雌激素治疗可使 TBG 升高而 TT3 假性升高。"
+
+- canonical_name: t4
+  name_zh: 总甲状腺素
+  aliases: [T4, TT4, 总T4, 甲状腺素, 总甲状腺素]
+  loinc: "3026-2"
+  category: 甲状腺
+  specimen: 血清
+  unit_canonical: nmol/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 66.0, high: 181.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "μg/dL", factor: 12.87}
+    - {from: "nmol/L", factor: 0.0777}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "同 TT3，受 TBG 浓度影响。"
+
+- canonical_name: tpoab
+  name_zh: 甲状腺过氧化物酶抗体
+  aliases: [TPOAb, TPO-Ab, ANTI-TPO, 甲状腺过氧化物酶抗体, 抗甲状腺过氧化物酶抗体]
+  loinc: "8099-3"
+  category: 甲状腺
+  specimen: 血清
+  unit_canonical: IU/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 34.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "kIU/L", factor: 1.0}
+    - {from: "U/mL", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "阳性提示自身免疫性甲状腺疾病（桥本甲状腺炎、Graves 病），健康人群亦有约 5%-10% 低滴度阳性，阳性本身不等于需要治疗。"
+
+# =========================================================================== #
+# 肿瘤标志物
+# =========================================================================== #
+- canonical_name: afp
+  name_zh: 甲胎蛋白
+  aliases: [AFP, α-FP, 甲胎蛋白, 甲胎蛋白AFP]
+  loinc: "1834-1"
+  category: 肿瘤标志物
+  specimen: 血清
+  unit_canonical: ng/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 7.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "μg/L", factor: 1.0}
+    - {from: "IU/mL", factor: 1.21}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "参考上限常取 <7 ng/mL（部分实验室 0-20 ng/mL，因方法而异）。妊娠期生理性升高（按孕周判读）；慢性肝病活动期可轻中度升高。>400 ng/mL 持续升高需高度警惕肝细胞癌，但确诊依赖影像与病理。"
+
+- canonical_name: cea
+  name_zh: 癌胚抗原
+  aliases: [CEA, 癌胚抗原]
+  loinc: "2039-6"
+  category: 肿瘤标志物
+  specimen: 血清
+  unit_canonical: ng/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 5.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "μg/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "参考上限约 <5 ng/mL；吸烟者上限可达 10 ng/mL。主要用于结直肠癌等疗效监测与复发随访，不适用于人群筛查（特异性不足）。"
+
+- canonical_name: ca125
+  name_zh: 糖类抗原125
+  aliases: [CA125, CA-125, 糖类抗原125, 癌抗原125]
+  loinc: "10334-1"
+  category: 肿瘤标志物
+  specimen: 血清
+  unit_canonical: U/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 35.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "kU/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "参考上限 <35 U/mL。妊娠早期、月经期、子宫内膜异位症、盆腔炎、肝硬化腹水、胸腹膜炎均可升高，不可单独用于卵巢癌诊断。"
+
+- canonical_name: ca153
+  name_zh: 糖类抗原15-3
+  aliases: [CA15-3, CA153, 糖类抗原153, 癌抗原15-3]
+  loinc: "6875-9"
+  category: 肿瘤标志物
+  specimen: 血清
+  unit_canonical: U/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 25.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "kU/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "参考上限 <25 U/mL（部分实验室 <30）。主要用于乳腺癌复发监测；早期乳腺癌敏感性低，肝病与良性乳腺疾病可轻度升高。"
+
+- canonical_name: ca199
+  name_zh: 糖类抗原19-9
+  aliases: [CA19-9, CA199, 糖类抗原199, 癌抗原19-9]
+  loinc: "24108-3"
+  category: 肿瘤标志物
+  specimen: 血清
+  unit_canonical: U/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 37.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "kU/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "参考上限 <37 U/mL。Lewis 抗原阴性人群（约 5%-10%）不表达该抗原，胰腺癌时也可不升高。胆道梗阻、胰腺炎、肝硬化可显著升高。"
+
+- canonical_name: psa
+  name_zh: 前列腺特异性抗原
+  aliases: [PSA, TPSA, t-PSA, 前列腺特异性抗原, 总前列腺特异性抗原]
+  loinc: "2857-1"
+  category: 肿瘤标志物
+  specimen: 血清
+  unit_canonical: ng/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: null
+    M: {low: null, high: 4.00}
+    F: null
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "μg/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "男性专属指标（女性无前列腺组织，报告出现该值视为异常情况，不做区间判定）。参考上限 <4.0 ng/mL；40 岁以下男性通常 <1.4 ng/mL。直肠指检、导尿、膀胱镜、射精后 48 小时内可假性升高，采血前应避免。"
+
+- canonical_name: fpsa
+  name_zh: 游离前列腺特异性抗原
+  aliases: [fPSA, FPSA, f-PSA, 游离前列腺特异性抗原, 游离PSA]
+  loinc: "10886-0"
+  category: 肿瘤标志物
+  specimen: 血清
+  unit_canonical: ng/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: null
+    M: {low: null, high: 0.93}
+    F: null
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "μg/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "男性专属指标。临床上更有价值的是 fPSA/tPSA 比值：总 PSA 在 4-10 ng/mL 灰区时，比值 <0.16 提示前列腺癌风险较高，>0.25 多倾向良性。单独 fPSA 绝对值参考意义有限，本上限仅为常见参考。"
+
+# =========================================================================== #
+# 糖代谢
+# =========================================================================== #
+- canonical_name: insulin
+  name_zh: 胰岛素
+  aliases: [INS, Insulin, 胰岛素, 空腹胰岛素, 免疫反应性胰岛素]
+  loinc: "20448-7"
+  category: 糖代谢
+  specimen: 血清
+  unit_canonical: mIU/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 2.60, high: 24.90}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "μIU/mL", factor: 6.945}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "须空腹 8-12 小时采血，参考区间依赖方法学与是否采用特异性（去胰岛素原）抗体，各实验室差异大。胰岛素释放试验需按各时间点（0/30/60/120/180 分钟）分别判读，单次空腹值不能反映胰岛功能全貌。溶血可致降解。单位与 mIU/L 等价（1 μIU/mL = 1 mIU/L）；SI 单位 pmol/L 换算为 pmol/L × 0.1439 = mIU/L。"
+
+- canonical_name: c_peptide
+  name_zh: C肽
+  aliases: [C-Peptide, C肽, 血清C肽, 连接肽]
+  loinc: "1986-9"
+  category: 糖代谢
+  specimen: 血清
+  unit_canonical: ng/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 1.10, high: 4.40}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "nmol/L", factor: 3.003}
+    - {from: "pmol/L", factor: 0.003003}
+    - {from: "μg/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "与胰岛素等分子释放，但肝摄取少、半衰期更长，更能反映内源性胰岛分泌；接受外源性胰岛素治疗者测 C 肽可评估自身胰岛功能。肾功能不全时清除减慢而升高。须空腹采血。"
+
+# =========================================================================== #
+# 凝血
+# =========================================================================== #
+- canonical_name: pt
+  name_zh: 凝血酶原时间
+  aliases: [PT, 凝血酶原时间, 血浆凝血酶原时间]
+  loinc: "5902-2"
+  category: 凝血
+  specimen: 血浆
+  unit_canonical: s
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 11.0, high: 14.5}
+  critical: {low: null, high: null}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "参考区间依试剂凝血活酶 ISI 不同而有差异（常见 11-14.5 s）；华法林监测须看 INR 而非 PT 秒数。标本应为枸橼酸钠抗凝血浆，采血量不足或 HCT 显著异常会影响结果。"
+
+- canonical_name: inr
+  name_zh: 国际标准化比值
+  aliases: [INR, 国际标准化比值, 国际标准化比率]
+  loinc: "6301-6"
+  category: 凝血
+  specimen: 血浆
+  unit_canonical: ""
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 0.80, high: 1.20}
+  critical: {low: null, high: 5.00}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "计算值（患者 PT ÷ 正常对照 PT，取 ISI 次方），无单位。健康人约 0.8-1.2。抗凝治疗目标通常 2.0-3.0（机械瓣膜等可 2.5-3.5）。危急值：INR >5.0，出血风险显著增加，须立即评估。"
+
+- canonical_name: aptt
+  name_zh: 活化部分凝血活酶时间
+  aliases: [APTT, aPTT, PTT, 活化部分凝血活酶时间, 部分凝血活酶时间]
+  loinc: "14979-9"
+  category: 凝血
+  specimen: 血浆
+  unit_canonical: s
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 28.0, high: 45.0}
+  critical: {low: null, high: null}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "参考区间依试剂与仪器差异较大（常见 28-45 s）。用于肝素抗凝监测（治疗范围多为正常上限的 1.5-2.5 倍）与内源凝血因子筛查。标本放置过久或采血不畅可致假性延长。"
+
+- canonical_name: fib
+  name_zh: 纤维蛋白原
+  aliases: [FIB, Fib, Fbg, 纤维蛋白原, 血浆纤维蛋白原]
+  loinc: "3255-7"
+  category: 凝血
+  specimen: 血浆
+  unit_canonical: g/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 2.00, high: 4.00}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/dL", factor: 0.01}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "属急性时相反应蛋白，炎症、感染、恶性肿瘤、妊娠晚期、创伤可升高；降低见于弥散性血管内凝血（DIC）、重症肝病、原发性纤溶亢进。"
+
+- canonical_name: ddimer
+  name_zh: D-二聚体
+  aliases: [D-Dimer, DDimer, D二聚体, D-二聚体]
+  loinc: "48065-7"
+  category: 凝血
+  specimen: 血浆
+  unit_canonical: mg/L
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: null, high: 0.50}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "mg/L FEU", factor: 1.0}
+    - {from: "μg/mL", factor: 1.0}
+    - {from: "ng/mL FEU", factor: 0.001}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "单位体系极易混淆：DDU（D-二聚体单位）与 FEU（纤维蛋白原当量单位）相差约 2 倍，同一标本 0.5 mg/L DDU ≈ 1.0 mg/L FEU，跨实验室比较前必须确认单位。参考上限常取 <0.5 mg/L（FEU 体系可至 <1.0）。阴性预测价值高（用于排除肺栓塞/深静脉血栓），阳性特异性低：年龄、妊娠、感染、肿瘤、创伤、术后均可升高；50 岁以上可用年龄校正切点（年龄 ×0.01 mg/L FEU）。"
+
+# =========================================================================== #
+# 维生素与铁代谢
+# =========================================================================== #
+- canonical_name: vitd
+  name_zh: 25-羟基维生素D
+  aliases: [25-OH-VD, 25(OH)D, VitD, 维生素D, 25-羟基维生素D, 总维生素D]
+  loinc: "1989-3"
+  category: 维生素与铁代谢
+  specimen: 血清
+  unit_canonical: ng/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 30.0, high: 100.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "nmol/L", factor: 0.4}
+    - {from: "ng/mL", factor: 2.5}
+    - {from: "μg/L", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "检测的是 25-羟基维生素D（非活性 1,25-(OH)2D）。常用判读：<10 严重缺乏、10-20 缺乏、20-30 不足、30-100 充足、>100 ng/mL 需警惕过量（可致高钙血症）。各学会切点略有差异，本区间采用内分泌学会充足标准。"
+
+- canonical_name: vitb12
+  name_zh: 维生素B12
+  aliases: [VitB12, VB12, B12, 维生素B12, 钴胺素, 氰钴胺]
+  loinc: "2132-9"
+  category: 维生素与铁代谢
+  specimen: 血清
+  unit_canonical: pg/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 180.0, high: 914.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "pmol/L", factor: 1.355}
+    - {from: "pg/mL", factor: 0.7378}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "参考区间依方法学差异较大（常见 180-914 pg/mL）。血清 B12 接近下限时仍可能存在组织缺乏，必要时加测甲基丙二酸或同型半胱氨酸。二甲双胍长期使用、胃切除、严格素食、回肠病变可致缺乏。"
+
+- canonical_name: folate
+  name_zh: 叶酸
+  aliases: [FA, Folate, 叶酸, 血清叶酸, 维生素B9]
+  loinc: "2284-8"
+  category: 维生素与铁代谢
+  specimen: 血清
+  unit_canonical: ng/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 3.1, high: 20.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "nmol/L", factor: 0.4413}
+    - {from: "ng/mL", factor: 2.266}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "血清叶酸反映近期摄入，波动大；红细胞叶酸更能反映组织储备。溶血会因红细胞内叶酸释放而假性升高。妊娠期需求增加。部分实验室参考下限报 4.0 ng/mL 或采用 nmol/L（>10.4 nmol/L 为正常）。"
+
+- canonical_name: ferritin
+  name_zh: 铁蛋白
+  aliases: [FER, Ferritin, FERRI, 铁蛋白, 血清铁蛋白]
+  loinc: "2276-4"
+  category: 维生素与铁代谢
+  specimen: 血清
+  unit_canonical: ng/mL
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 30.0, high: 300.0}
+    M: {low: 30.0, high: 400.0}
+    F: {low: 13.0, high: 150.0}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "μg/L", factor: 1.0}
+    - {from: "pmol/L", factor: 0.4451}
+    - {from: "ng/mL", factor: 2.247}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "参考区间按性别分层且依赖检测平台，绝经后女性与男性接近。是反映体内铁储备最敏感的指标：<30 ng/mL 提示铁缺乏（<15 更确定），但铁蛋白属急性时相反应蛋白，炎症、感染、肿瘤、肝病时可显著升高而掩盖缺铁，此时应结合转铁蛋白饱和度与 CRP 判读。"
+
+- canonical_name: serum_iron
+  name_zh: 血清铁
+  aliases: [SI, Fe, Serum Iron, 血清铁, 铁]
+  loinc: "2498-4"
+  category: 维生素与铁代谢
+  specimen: 血清
+  unit_canonical: μmol/L
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 11.6, high: 31.3}
+    M: {low: 11.6, high: 31.3}
+    F: {low: 9.0, high: 30.4}
+  critical: {low: null, high: null}
+  unit_conversions:
+    - {from: "μg/dL", factor: 0.179}
+    - {from: "μmol/L", factor: 5.587}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "波动大，有明显昼夜节律（下午偏低），受近期饮食与补铁剂影响，单次结果参考价值有限，通常需与总铁结合力/转铁蛋白饱和度联合解读。采血应使用专用无铁污染采血管，最好清晨空腹。"

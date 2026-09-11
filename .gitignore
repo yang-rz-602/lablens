@@ -1,0 +1,33 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# --- 工具缓存（本项目把 uv 缓存放在工作区内，避免写入工作区外被沙箱拒绝）---
+.uv-cache/
+.pytest_cache/
+.pytest-tmp/
+pytest-cache-files-*/
+.ruff_cache/
+tests/.tmp/
+
+# --- 本地数据：默认不产生，但一旦启用趋势存储就会出现在这里 ---
+*.duckdb
+*.duckdb.wal
+lablens_trend.duckdb*
+
+# --- 密钥与本地配置 ---
+.env
+.env.local
+*.key
+
+# --- 编辑器 / 系统 ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

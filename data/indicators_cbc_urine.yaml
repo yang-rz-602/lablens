@@ -1,0 +1,494 @@
+# LabLens 结构化指标字典 —— 血常规 / 尿常规
+#
+# 参考区间来源：
+#   - 血常规：WS/T 405-2012《血细胞分析参考区间》表1（中国成年人，静脉血仪器法）。
+#     该标准表1 共 18 项，止于血小板计数(PLT)，**未纳入 RDW-CV 与 MPV**，
+#     这两项改用临床检验操作规程/各院检验科公示区间。
+#   - 尿常规：无对应卫生行业标准，来源为临床检验操作规程/各院检验科公示区间。
+#   - 按性别分层的项目（rbc/hgb/hct）同时给出 default/M/F；default 为男女区间并集，
+#     仅在性别未知时兜底，性别已知时必须使用 M/F。
+#   - critical 为危急值阈值；无公认阈值者填 null，不做推测。
+
+- canonical_name: wbc
+  name_zh: "白细胞计数"
+  aliases: ["WBC", "白细胞", "白细胞计数", "WBCC", "WBC计数", "白血球", "白细胞总数", "WBC总数"]
+  loinc: "6690-2"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "10^9/L"
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 3.5, high: 9.5}
+  critical: {low: 1.5, high: 30.0}
+  unit_conversions:
+    - {from: "10^3/uL", factor: 1.0}
+    - {from: "K/uL", factor: 1.0}
+    - {from: "/uL", factor: 0.001}
+  source: "WS/T 405-2012"
+  note: "危急值下限各院不一致（常见 1.5~2.5×10^9/L），上限 30×10^9/L 较为一致；新生儿及儿童白细胞计数随年龄变化明显，本区间仅适用于成年人。"
+
+- canonical_name: rbc
+  name_zh: "红细胞计数"
+  aliases: ["RBC", "红细胞", "红细胞计数", "RBC计数", "红血球", "红细胞总数"]
+  loinc: "789-8"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "10^12/L"
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 3.8, high: 5.8}
+    M: {low: 4.3, high: 5.8}
+    F: {low: 3.8, high: 5.1}
+  critical: null
+  unit_conversions:
+    - {from: "10^6/uL", factor: 1.0}
+    - {from: "10^12/L", factor: 1.0}
+    - {from: "10^4/uL", factor: 0.01}
+  source: "WS/T 405-2012"
+  note: "按性别分层：男 4.3~5.8，女 3.8~5.1（×10^12/L）。default 为男女并集，仅用于性别未知时兜底。高海拔地区人群结果明显偏高；未梢采血不适用本区间。无公认危急值。"
+
+- canonical_name: hgb
+  name_zh: "血红蛋白"
+  aliases: ["HGB", "Hb", "HB", "血红蛋白", "血红蛋白浓度", "HGB浓度", "血色素"]
+  loinc: "718-7"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "g/L"
+  decimals: 0
+  qualitative: false
+  ref:
+    default: {low: 115, high: 175}
+    M: {low: 130, high: 175}
+    F: {low: 115, high: 150}
+  critical: {low: 50.0, high: 200.0}
+  unit_conversions:
+    - {from: "g/L", factor: 1.0}
+    - {from: "g/dL", factor: 10.0}
+  source: "WS/T 405-2012"
+  note: "按性别分层：男 130~175，女 115~150（g/L）。default 为男女并集，仅用于性别未知时兜底。危急值下限各院取 50~60 g/L 不等；新生儿区间不同（如 <95 g/L 或 >230 g/L）；高海拔地区人群偏高。"
+
+- canonical_name: hct
+  name_zh: "血细胞比容"
+  aliases: ["HCT", "Hct", "红细胞比容", "血细胞比容", "红细胞压积", "压积", "PCV", "HCT压积"]
+  loinc: "4544-3"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "L/L"
+  decimals: 3
+  qualitative: false
+  ref:
+    default: {low: 0.35, high: 0.50}
+    M: {low: 0.40, high: 0.50}
+    F: {low: 0.35, high: 0.45}
+  critical: {low: 0.15, high: 0.60}
+  unit_conversions:
+    - {from: "L/L", factor: 1.0}
+    - {from: "%", factor: 0.01}
+  source: "WS/T 405-2012"
+  note: "标准原文以 L/L 表示：男 0.40~0.50，女 0.35~0.45；报告单常以 % 打印（男 40~50，女 35~45），换算 ×100。default 为男女并集。危急值 ≤0.15 或 ≥0.60（即 ≤15% 或 ≥60%）。"
+
+- canonical_name: mcv
+  name_zh: "平均红细胞体积"
+  aliases: ["MCV", "平均红细胞体积", "平均红细胞容积", "红细胞平均体积"]
+  loinc: "787-2"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "fL"
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 82, high: 100}
+  critical: null
+  unit_conversions:
+    - {from: "fL", factor: 1.0}
+    - {from: "um^3", factor: 1.0}
+  source: "WS/T 405-2012"
+  note: "男女区间相同。无公认危急值。"
+
+- canonical_name: mch
+  name_zh: "平均红细胞血红蛋白量"
+  aliases: ["MCH", "平均红细胞血红蛋白量", "平均红细胞血红蛋白含量", "红细胞平均血红蛋白量"]
+  loinc: "785-6"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "pg"
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 27, high: 34}
+  critical: null
+  unit_conversions:
+    - {from: "pg", factor: 1.0}
+  source: "WS/T 405-2012"
+  note: "男女区间相同。无公认危急值。"
+
+- canonical_name: mchc
+  name_zh: "平均红细胞血红蛋白浓度"
+  aliases: ["MCHC", "平均红细胞血红蛋白浓度", "红细胞平均血红蛋白浓度"]
+  loinc: "786-4"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "g/L"
+  decimals: 0
+  qualitative: false
+  ref:
+    default: {low: 316, high: 354}
+  critical: null
+  unit_conversions:
+    - {from: "g/L", factor: 1.0}
+    - {from: "g/dL", factor: 10.0}
+  source: "WS/T 405-2012"
+  note: "男女区间相同。报告单也可能以 g/dL 打印（31.6~35.4）。无公认危急值。"
+
+- canonical_name: rdw_cv
+  name_zh: "红细胞分布宽度变异系数"
+  aliases: ["RDW-CV", "RDW_CV", "RDWCV", "RDW", "红细胞分布宽度", "红细胞分布宽度CV", "红细胞体积分布宽度"]
+  loinc: "788-0"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "%"
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 11.5, high: 14.5}
+  critical: null
+  unit_conversions:
+    - {from: "%", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "WS/T 405-2012 表1 未纳入 RDW-CV，故来源改用操作规程与各院公示区间。不同血细胞分析仪差异较大，应以报告单自带区间为准。另需与 RDW-SD（fL）区分。无公认危急值。"
+
+- canonical_name: plt
+  name_zh: "血小板计数"
+  aliases: ["PLT", "血小板", "血小板计数", "BPC", "PLT计数", "血小板总数"]
+  loinc: "777-3"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "10^9/L"
+  decimals: 0
+  qualitative: false
+  ref:
+    default: {low: 125, high: 350}
+  critical: {low: 30.0, high: 1000.0}
+  unit_conversions:
+    - {from: "10^3/uL", factor: 1.0}
+    - {from: "K/uL", factor: 1.0}
+    - {from: "/uL", factor: 0.001}
+  source: "WS/T 405-2012"
+  note: "男女区间相同。危急值下限各院取 20~50×10^9/L 不等，产科另有更严阈值；上限 1000×10^9/L 较一致。注意与 MPV、PDW、PCT 等血小板参数区分。"
+
+- canonical_name: mpv
+  name_zh: "平均血小板体积"
+  aliases: ["MPV", "平均血小板体积", "血小板平均体积"]
+  loinc: "32623-1"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "fL"
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 7.4, high: 12.5}
+  critical: null
+  unit_conversions:
+    - {from: "fL", factor: 1.0}
+    - {from: "um^3", factor: 1.0}
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "WS/T 405-2012 表1 未纳入 MPV，故来源改用操作规程与各院公示区间。阻抗法与光学法、不同仪器间 MPV 区间差异较大（部分实验室为 9.0~13.0），应以报告单自带区间为准。无公认危急值。"
+
+- canonical_name: neut_pct
+  name_zh: "中性粒细胞百分数"
+  aliases: ["NEUT%", "NEUT", "N%", "NE%", "中性粒细胞百分比", "中性粒细胞百分率", "中性粒细胞比例", "中性粒细胞"]
+  loinc: "770-8"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "%"
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 40, high: 75}
+  critical: null
+  unit_conversions:
+    - {from: "%", factor: 1.0}
+  source: "WS/T 405-2012"
+  note: "男女区间相同。部分实验室以 0~1 的小数（比例）形式报告，需 ×100 换算。无公认危急值；临床关注的是中性粒细胞绝对值(neut_abs)。"
+
+- canonical_name: lymph_pct
+  name_zh: "淋巴细胞百分数"
+  aliases: ["LYMPH%", "LYM%", "LYMPH", "L%", "淋巴细胞百分比", "淋巴细胞百分率", "淋巴细胞比例", "淋巴细胞"]
+  loinc: "736-9"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "%"
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 20, high: 50}
+  critical: null
+  unit_conversions:
+    - {from: "%", factor: 1.0}
+  source: "WS/T 405-2012"
+  note: "男女区间相同。儿童淋巴细胞百分数明显高于成人，本区间仅适用于成年人。无公认危急值。"
+
+- canonical_name: mono_pct
+  name_zh: "单核细胞百分数"
+  aliases: ["MONO%", "MON%", "MONO", "M%", "单核细胞百分比", "单核细胞百分率", "单核细胞比例", "单核细胞"]
+  loinc: "5905-5"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "%"
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 3, high: 10}
+  critical: null
+  unit_conversions:
+    - {from: "%", factor: 1.0}
+  source: "WS/T 405-2012"
+  note: "男女区间相同。无公认危急值。"
+
+- canonical_name: eo_pct
+  name_zh: "嗜酸性粒细胞百分数"
+  aliases: ["EO%", "EOS%", "EO", "EOS", "E%", "嗜酸性粒细胞百分比", "嗜酸性粒细胞百分率", "嗜酸细胞百分比"]
+  loinc: "713-8"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "%"
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 0.4, high: 8.0}
+  critical: null
+  unit_conversions:
+    - {from: "%", factor: 1.0}
+  source: "WS/T 405-2012"
+  note: "男女区间相同。无公认危急值。"
+
+- canonical_name: baso_pct
+  name_zh: "嗜碱性粒细胞百分数"
+  aliases: ["BASO%", "BAS%", "BASO", "B%", "嗜碱性粒细胞百分比", "嗜碱性粒细胞百分率", "嗜碱细胞百分比"]
+  loinc: "706-2"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "%"
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 0.0, high: 1.0}
+  critical: null
+  unit_conversions:
+    - {from: "%", factor: 1.0}
+  source: "WS/T 405-2012"
+  note: "男女区间相同。无公认危急值。"
+
+- canonical_name: neut_abs
+  name_zh: "中性粒细胞绝对值"
+  aliases: ["NEUT#", "NEUT#abs", "NEUT绝对值", "中性粒细胞绝对值", "中性粒细胞计数", "中性粒细胞绝对数", "中性粒细胞绝对值(NEUT#)"]
+  loinc: "751-8"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "10^9/L"
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 1.8, high: 6.3}
+  critical: null
+  unit_conversions:
+    - {from: "10^3/uL", factor: 1.0}
+    - {from: "/uL", factor: 0.001}
+  source: "WS/T 405-2012"
+  note: "男女区间相同。中性粒细胞绝对值 <0.5×10^9/L 是粒细胞缺乏的公认临床分界，但各院危急值目录纳入情况不一致，本字典未设危急值阈值。注意与中性粒细胞百分数(neut_pct)区分。"
+
+- canonical_name: lymph_abs
+  name_zh: "淋巴细胞绝对值"
+  aliases: ["LYMPH#", "LYM#", "LYMPH绝对值", "淋巴细胞绝对值", "淋巴细胞计数", "淋巴细胞绝对数", "淋巴细胞绝对值(LYMPH#)"]
+  loinc: "731-0"
+  category: "血常规"
+  specimen: "全血"
+  unit_canonical: "10^9/L"
+  decimals: 2
+  qualitative: false
+  ref:
+    default: {low: 1.1, high: 3.2}
+  critical: null
+  unit_conversions:
+    - {from: "10^3/uL", factor: 1.0}
+    - {from: "/uL", factor: 0.001}
+  source: "WS/T 405-2012"
+  note: "男女区间相同。儿童淋巴细胞绝对值高于成人，本区间仅适用于成年人。无公认危急值。"
+
+- canonical_name: u_pro
+  name_zh: "尿蛋白"
+  aliases: ["PRO", "URO-PRO", "尿蛋白", "蛋白质", "尿蛋白定性", "PRO-U", "尿蛋白(PRO)", "蛋白"]
+  loinc: "5804-0"
+  category: "尿常规"
+  specimen: "尿液"
+  unit_canonical: "定性"
+  decimals: null
+  qualitative: true
+  ref:
+    qualitative_normal: ["阴性", "-", "neg", "正常"]
+  critical: null
+  unit_conversions: []
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "干化学半定量的大致对应：±≈0.15 g/L，1+≈0.3 g/L，2+≈1.0 g/L，3+≈3.0 g/L，4+≈10 g/L。生理性蛋白尿（运动、发热、体位性）需与病理性区分。定性项目无危急值。"
+
+- canonical_name: u_glu
+  name_zh: "尿葡萄糖"
+  aliases: ["GLU", "U-GLU", "尿糖", "尿葡萄糖", "葡萄糖", "尿糖定性", "GLU-U", "尿糖(GLU)"]
+  loinc: "5792-7"
+  category: "尿常规"
+  specimen: "尿液"
+  unit_canonical: "定性"
+  decimals: null
+  qualitative: true
+  ref:
+    qualitative_normal: ["阴性", "-", "neg", "正常"]
+  critical: null
+  unit_conversions: []
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "干化学半定量的大致对应：1+≈5.5 mmol/L，2+≈14 mmol/L，3+≈28 mmol/L，4+≈55 mmol/L。阳性阈值受肾糖阈影响。定性项目无危急值。"
+
+- canonical_name: u_blo
+  name_zh: "尿隐血"
+  aliases: ["BLD", "隐血", "尿隐血", "隐血试验", "尿隐血试验", "BLD-U", "尿隐血(BLD)", "BLU", "尿潜血", "尿潜血试验", "潜血", "OB"]
+  loinc: "5794-3"
+  category: "尿常规"
+  specimen: "尿液"
+  unit_canonical: "定性"
+  decimals: null
+  qualitative: true
+  ref:
+    qualitative_normal: ["阴性", "-", "neg", "正常"]
+  critical: null
+  unit_conversions: []
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "干化学法检测血红蛋白/肌红蛋白的过氧化物酶活性，肌红蛋白尿亦可阳性。大量维生素C 可致假阴性，故隐血阴性不能完全排除血尿。注意与尿沉渣红细胞(u_rbc)区分。定性项目无危急值。"
+
+- canonical_name: u_le
+  name_zh: "尿白细胞酯酶"
+  aliases: ["LEU", "LE", "尿白细胞", "白细胞", "尿白细胞酯酶", "白细胞酯酶", "LEU-U", "尿白细胞(LEU)"]
+  loinc: "5799-2"
+  category: "尿常规"
+  specimen: "尿液"
+  unit_canonical: "定性"
+  decimals: null
+  qualitative: true
+  ref:
+    qualitative_normal: ["阴性", "-", "neg", "正常"]
+  critical: null
+  unit_conversions: []
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "干化学白细胞酯酶为中性粒细胞酯酶，与镜检白细胞计数可能不一致；标本放置过久、高比重尿、大量维生素C 或蛋白可致假阴性。注意与尿沉渣白细胞(u_wbc)区分。定性项目无危急值。"
+
+- canonical_name: u_nit
+  name_zh: "尿亚硝酸盐"
+  aliases: ["NIT", "亚硝酸盐", "尿亚硝酸盐", "亚硝酸盐试验", "NIT-U", "尿亚硝酸盐(NIT)"]
+  loinc: "5802-4"
+  category: "尿常规"
+  specimen: "尿液"
+  unit_canonical: "定性"
+  decimals: null
+  qualitative: true
+  ref:
+    qualitative_normal: ["阴性", "-", "neg", "正常"]
+  critical: null
+  unit_conversions: []
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "阳性提示尿中可能存在能将硝酸盐还原为亚硝酸盐的革兰阴性杆菌（如大肠埃希菌），是尿路感染的辅助证据；阴性不能排除感染（如球菌感染、尿液在膀胱内停留时间过短）。定性项目无危急值。"
+
+- canonical_name: u_ket
+  name_zh: "尿酮体"
+  aliases: ["KET", "酮体", "尿酮体", "酮体定性", "KET-U", "尿酮体(KET)", "乙酰乙酸"]
+  loinc: "5797-6"
+  category: "尿常规"
+  specimen: "尿液"
+  unit_canonical: "定性"
+  decimals: null
+  qualitative: true
+  ref:
+    qualitative_normal: ["阴性", "-", "neg", "正常"]
+  critical: null
+  unit_conversions: []
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "主要检测乙酰乙酸，对β-羟丁酸不敏感，糖尿病酮症早期或经治疗后可为假阴性。定性项目无危急值。"
+
+- canonical_name: u_bil
+  name_zh: "尿胆红素"
+  aliases: ["BIL", "胆红素", "尿胆红素", "胆红素定性", "BIL-U", "尿胆红素(BIL)"]
+  loinc: "5770-3"
+  category: "尿常规"
+  specimen: "尿液"
+  unit_canonical: "定性"
+  decimals: null
+  qualitative: true
+  ref:
+    qualitative_normal: ["阴性", "-", "neg", "正常"]
+  critical: null
+  unit_conversions: []
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "仅检测结合（直接）胆红素；标本放置过久或长时间光照可致假阴性。注意与尿胆原(u_rob)区分，本字典未包含尿胆原。定性项目无危急值。"
+
+- canonical_name: u_ph
+  name_zh: "尿酸碱度"
+  aliases: ["PH", "pH", "尿pH", "酸碱度", "尿酸碱度", "尿液酸碱度", "PH-U"]
+  loinc: "5803-2"
+  category: "尿常规"
+  specimen: "尿液"
+  unit_canonical: "pH"
+  decimals: 1
+  qualitative: false
+  ref:
+    default: {low: 5.0, high: 8.0}
+  critical: null
+  unit_conversions: []
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "pH 为无量纲量，规范单位记为 pH。随机尿 pH 受饮食影响明显（肉食偏酸、蔬果偏碱）；干化学法通常以 0.5 或 1.0 为最小分度。无公认危急值。"
+
+- canonical_name: u_sg
+  name_zh: "尿比重"
+  aliases: ["SG", "比重", "尿比重", "尿比重SG", "相对密度", "SG-U"]
+  loinc: "5811-5"
+  category: "尿常规"
+  specimen: "尿液"
+  unit_canonical: "无量纲"
+  decimals: 3
+  qualitative: false
+  ref:
+    default: {low: 1.003, high: 1.030}
+  critical: null
+  unit_conversions: []
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "比重为无量纲量。干化学法结果受尿蛋白、尿糖及造影剂干扰，与折射计/称重法结果可能不一致；新生儿区间偏低。无公认危急值。"
+
+- canonical_name: u_rbc
+  name_zh: "尿沉渣红细胞"
+  aliases: ["RBC-HP", "尿沉渣红细胞", "镜检红细胞", "尿RBC", "红细胞(镜检)", "尿红细胞", "RBC镜检"]
+  loinc: "13945-1"
+  category: "尿常规"
+  specimen: "尿液"
+  unit_canonical: "定性"
+  decimals: null
+  qualitative: true
+  ref:
+    qualitative_normal: ["阴性", "-", "neg", "正常"]
+  critical: null
+  unit_conversions: []
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "本字典按尿常规报告单的定性用法处理。LOINC 13945-1 实为镜检计数（Erythrocytes [#/area] in Urine sediment by Microscopy high power field，即个/HP），部分实验室以 0~3/HP 报告，计数法结果需另行映射。注意与干化学隐血(u_blo)区分：隐血反映血红蛋白，镜检反映完整红细胞。定性项目无危急值。"
+
+- canonical_name: u_wbc
+  name_zh: "尿沉渣白细胞"
+  aliases: ["WBC-HP", "尿沉渣白细胞", "镜检白细胞", "尿WBC", "白细胞(镜检)", "尿白细胞(镜检)", "WBC镜检", "尿白细胞", "尿白细胞计数", "白细胞(尿)"]
+  loinc: "5821-4"
+  category: "尿常规"
+  specimen: "尿液"
+  unit_canonical: "定性"
+  decimals: null
+  qualitative: true
+  ref:
+    qualitative_normal: ["阴性", "-", "neg", "正常"]
+  critical: null
+  unit_conversions: []
+  source: "临床检验操作规程/各院检验科公示区间"
+  note: "本字典按尿常规报告单的定性用法处理。LOINC 5821-4 实为镜检计数（Leukocytes [#/area] in Urine sediment by Microscopy high power field，即个/HP），部分实验室以 0~5/HP 报告，计数法结果需另行映射。注意与干化学白细胞酯酶(u_le)区分。定性项目无危急值。"
