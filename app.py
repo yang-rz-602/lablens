@@ -45,6 +45,7 @@ from ui import (  # noqa: E402
     critical_alert,
     disclaimer,
     empty,
+    flow_divider,
     hero,
     inject_css,
     item_card,
@@ -421,6 +422,7 @@ def render_about_tab(kb: KnowledgeBase, retriever: Retriever) -> None:
             unsafe_allow_html=True,
         )
 
+    flow_divider()
     section("三条设计原则", "把安全边界做成产品的一部分")
     st.markdown(
         """

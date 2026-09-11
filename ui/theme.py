@@ -186,6 +186,39 @@ hr {{ border-color: {c['line']}; margin: 1.4rem 0; }}
     padding: .22rem .6rem; border-radius: 4px;
 }}
 
+.ll-flow-divider {{
+    display: flex; align-items: center; gap: .7rem;
+    margin: 1.3rem 0 .1rem; color: {c['muted']};
+}}
+.ll-flow-label, .ll-flow-copy {{
+    font-size: .7rem; font-weight: 700; letter-spacing: .08em; white-space: nowrap;
+}}
+.ll-flow-label {{ color: {c['brand']}; text-transform: uppercase; }}
+.ll-flow-copy {{ color: {c['muted']}; letter-spacing: .04em; }}
+.ll-flow-track {{
+    position: relative; display: block; flex: 1; height: 1px;
+    background: {c['line']}; overflow: hidden;
+}}
+.ll-flow-track::after {{
+    content: ""; position: absolute; inset: 0; width: 26%;
+    background: linear-gradient(90deg, transparent, {c['brand_line']}, transparent);
+    animation: ll-flow-sweep 3.4s ease-in-out infinite;
+}}
+.ll-flow-dot {{
+    position: absolute; z-index: 1; top: -3px; left: 0; width: 7px; height: 7px;
+    border-radius: 50%; background: {c['brand']};
+    box-shadow: 0 0 0 3px {c['brand_soft']};
+    animation: ll-flow-travel 3.4s ease-in-out infinite;
+}}
+@keyframes ll-flow-sweep {{
+    0% {{ transform: translateX(-120%); }}
+    55%, 100% {{ transform: translateX(390%); }}
+}}
+@keyframes ll-flow-travel {{
+    0% {{ left: 0; }}
+    100% {{ left: calc(100% - 7px); }}
+}}
+
 .ll-disclaimer {{
     display: flex; gap: .7rem; align-items: flex-start;
     background: #FFFBEB; border: 1px solid #FDE68A;
@@ -358,6 +391,10 @@ hr {{ border-color: {c['line']}; margin: 1.4rem 0; }}
     .ll-hero {{ padding: 1.15rem 1.25rem; }}
     .ll-principle-grid {{ grid-template-columns: 1fr; }}
     .ll-about-copy {{ padding: 1rem 0 0; }}
+}}
+@media (prefers-reduced-motion: reduce) {{
+    .ll-flow-track::after, .ll-flow-dot {{ animation: none; }}
+    .ll-flow-dot {{ left: calc(50% - 3px); }}
 }}
 </style>
 """

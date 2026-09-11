@@ -24,6 +24,7 @@ __all__ = [
     "esc",
     "render",
     "hero",
+    "flow_divider",
     "disclaimer",
     "section",
     "stat_cards",
@@ -83,6 +84,17 @@ def hero(title: str, subtitle: str, chips: Sequence[str] = ()) -> None:
         f'<p class="ll-sub">{esc(subtitle)}</p>'
         f'<div class="ll-chips">{chip_html}</div>'
         f"</div>"
+    )
+
+
+def flow_divider(label: str = "结果 · 依据 · 解释") -> None:
+    """带有轻微方向动画的流程分隔线，用于解释页面的视觉节奏。"""
+    render(
+        '<div class="ll-flow-divider" role="presentation">'
+        f'<span class="ll-flow-label">流程</span>'
+        '<span class="ll-flow-track"><i class="ll-flow-dot"></i></span>'
+        f'<span class="ll-flow-copy">{esc(label)}</span>'
+        '</div>'
     )
 
 
