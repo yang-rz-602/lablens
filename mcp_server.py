@@ -45,8 +45,9 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
 from core.explain import DISCLAIMER, interpret, render_ref, render_value  # noqa: E402
-from core.providers import OpenAICompatClient  # noqa: E402
-from core.retriever import Retriever, load_corpus  # noqa: E402
+from core.providers import LangChainLLMClient  # noqa: E402
+from core.rag import build_retriever  # noqa: E402
+from core.retriever import Retriever  # noqa: E402
 from core.rules import KnowledgeBase, build_report, load_knowledge_base  # noqa: E402
 from core.schema import PatientContext, RawLabItem, RawLabReport  # noqa: E402
 
@@ -69,7 +70,9 @@ def kb() -> KnowledgeBase:
 def retriever() -> Retriever:
     global _RETRIEVER
     if _RETRIEVER is None:
-        _RETRIEVER = Retriever(load_corpus(DATA_DIR / "corpus.jsonl"))
+        # 有 DASHSCOPE_API_KEY 时启用 FAISS 向量检索 + gte-rerank；
+        # 没有时自动降级为 BM25 + 确定性重排。判读工具本身不依赖它。
+        _RETRIEVER = build_retriever(DATA_DIR / "corpus.jsonl", index_dir=ROOT / ".index")
     return _RETRIEVER
 
 
@@ -203,7 +206,7 @@ def tool_explain(items: list[dict], sex: str | None = None, age: int | None = No
     )
 
     try:
-        client = OpenAICompatClient.from_env()
+        client = LangChainLLMClient.from_env()
     except Exception:  # noqa: BLE001 - 没有凭证就走抽取式降级路径
         client = None
 

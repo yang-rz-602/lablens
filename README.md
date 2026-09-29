@@ -2,9 +2,11 @@
 
 > **数值判定 100% 交给确定性代码，语言模型只负责把结果翻译成人话；没有参考区间时，系统拒绝判断。**
 
-[![tests](https://img.shields.io/badge/tests-218%20passed-brightgreen)](#评测)
+[![tests](https://img.shields.io/badge/tests-279%20passed-brightgreen)](#评测)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
+[![LangChain](https://img.shields.io/badge/LangChain-1.x-1C3C3C)](https://python.langchain.com/)
+[![FAISS](https://img.shields.io/badge/vector%20store-FAISS-4B8BBE)](https://github.com/facebookresearch/faiss)
 [![非医疗器械](https://img.shields.io/badge/%E5%AE%9A%E4%BD%8D-%E9%9D%9E%E5%8C%BB%E7%96%97%E5%99%A8%E6%A2%B0-orange)](#合规定位)
 
 ### 🔗 [在线体验](https://modelscope.cn/studios/yangrz2222/lablens) —— 魔搭创空间，国内直连、无需登录
@@ -40,7 +42,7 @@ FHIR 数据通道（smart-on-fhir、HAPI、wso2 已够用）。
 | 1 | 中文检验报告 + **参考区间代码判定**（无公开中文区间规则库） | `core/rules.py` + `data/indicators_*.yaml`（95 项，来源标注到卫生行业标准） |
 | 2 | **字段级溯源 + 判读依据**（中文为零） | `decision_trace`：每个判定记录用了哪条区间、来自哪里、跨过哪个界 |
 | 3 | **中文检验报告评测集**（不存在） | `evals/` 20 份合成报告 / 276 项，含 4 个危急值 case |
-| 4 | **确定性判读工具的 MCP 封装**（生态里全是 FHIR 数据通道） | `mcp_server.py`，零依赖手写 JSON-RPC |
+| 4 | **确定性判读工具的 MCP 封装**（生态里全是 FHIR 数据通道） | `mcp_server.py`，手写 JSON-RPC 2.0 over stdio |
 | 5 | 危急值分级 + 输出护栏 | `critical` 阈值 + `core/guard.py` 正则确定性拦截 |
 
 所以定位很明确：**不做第 11 个解读 Demo，做"中文检验报告的确定性判读层 + 可溯源 + 评测集"。**
@@ -104,8 +106,10 @@ Meyer 等那篇的结论原文就是：在用户未提供参考区间时，**AI 
         │  LabReport
         ▼
 ┌──────────────────────────────────────────────────────────┐
-│ Stage 3  解释层（LLM + 约束检索 + 拒答）                   │
+│ Stage 3  解释层（LangChain 检索 + 重排 + 拒答）             │
 │  · 先按 canonical_name 硬过滤 —— 绝不跨指标检索             │
+│  · EnsembleRetriever：BM25 ∥ FAISS 向量（metadata filter）│
+│  · ContextualCompressionRetriever：gte-rerank-v2 交叉编码器│
 │  · 再按判定结果排维度优先级（偏高→升高意义，偏低→降低意义）   │
 │  · 得分低于阈值 → 返回"暂无可靠依据"，不硬编                  │
 └──────────────────────────────────────────────────────────┘
@@ -117,20 +121,62 @@ Meyer 等那篇的结论原文就是：在用户未提供参考区间时，**AI 
 └──────────────────────────────────────────────────────────┘
 ```
 
-### 为什么解释层是「约束检索」而不是普通向量 RAG
+## 技术栈
 
-普通 RAG 是"把 query 扔进向量库取 top-k"，在医疗场景有三个致命问题：
+| 层 | 选型 |
+|---|---|
+| 数值判定 | 纯 Python 确定性代码（**不含任何 LLM**，可穷举单测） |
+| LLM 编排 | **LangChain 1.x**（`langchain-core` / `langchain-openai`） |
+| 模型接入 | LangChain `ChatOpenAI` + 自定义 `base_url`，一套代码覆盖通义千问 / 智谱 GLM / SiliconFlow / OpenAI / DeepSeek / 本地 vLLM·Ollama |
+| 检索 | **LangChain `EnsembleRetriever`**（`BM25Retriever` ∥ `FAISS` 向量检索） |
+| 重排 | **LangChain `ContextualCompressionRetriever`** + DashScope `gte-rerank-v2` 交叉编码器 |
+| Embedding | DashScope `text-embedding-v4`（自动分批，10 条/请求） |
+| 向量库 | **FAISS**（`faiss-cpu`，本地嵌入式，按语料指纹缓存索引） |
+| 数据校验 | Pydantic v2（三层数据契约 + JSON Schema 约束 + 二次校验） |
+| 前端 | Streamlit + 自建设计令牌组件层 |
+| Agent 集成 | MCP（JSON-RPC 2.0 over stdio） |
+| 测试 / 质量 | pytest（279 个，含 Streamlit `AppTest` 端到端）+ ruff + CI 安全闸门 |
 
-1. **可能捞错项目**——查"肌酐"却召回"尿素"的区间或意义，模型会照着错的依据写出一段自洽的解释，**用户完全看不出来**。
-2. **表达不了优先级**——"报告区间 > 知识库区间"这种业务规则，纯相似度排序无法表达。
-3. **没有"不知道"这个选项**——top-k 永远返回 k 条，哪怕全都无关。
+> 供应商全部兼容 OpenAI 协议，所以 LLM 层用 LangChain 的 `ChatOpenAI` 配不同 `base_url`
+> 即可覆盖——**不需要为每家写适配代码，也不手写 HTTP 请求与重试**。
 
-所以本项目的顺序是 **先硬过滤、再语义排序**：`canonical_name` 由规则引擎**查表**得到（不是模型生成的），
-用它做硬过滤保证不串指标；维度权重高于词法相关度，保证"问升高意义不会返回定义"；分数低于阈值直接拒答。
+### 检索层：约束检索 + 混合召回 + 重排
+
+```
+canonical_name（规则引擎查表得到，不是模型生成的）
+   │
+   ├─ 硬过滤：候选集锁死在本指标的语料上
+   │     · FAISS 腿：metadata filter {"canonical_name": ...}
+   │     · BM25 腿：直接喂本指标的子集构建（它不支持 metadata filter，
+   │                所以不能"先召回再过滤"——那会漏召回）
+   │
+   ├─ 召回：LangChain EnsembleRetriever（RRF 倒数排名融合两条腿）
+   │
+   ├─ 重排：LangChain ContextualCompressionRetriever
+   │     · 有 Key：DashScope gte-rerank-v2（真正的交叉编码器）
+   │     · 无 Key：确定性词面重排（query × doc 交互，可单测）
+   │
+   ├─ 维度先验（业务规则）：偏高优先取 high_meaning，偏低优先取 low_meaning
+   │
+   └─ 得分低于阈值 → 拒答，返回"暂无可靠依据"
+```
+
+**两处刻意的设计：**
+
+1. **过滤在召回之前，而且是硬的。** 语料里有 82 个指标，
+   肌酐 / 尿素 / 胱抑素C 在向量空间里挨得极近——向量检索最容易做的事，
+   恰好就是"串指标"，而这正是本项目最不能犯的错。所以两条腿都在**构造期**被锁死，
+   结构上不可能越界。`tests/test_rag.py` 有一条用例把 82 个指标逐个跑一遍来守这条性质。
+
+2. **维度先验压过相似度。** 候选集已经硬过滤到同一指标，此时"取哪一类依据"
+   （定义 / 升高意义 / 影响因素）比"哪一句字面更像"重要得多。所以打分成两个**不重叠的带**：
+   维度先验决定跨维度优先级，重排分只决定同维度内排序。
+   否则会出现"查升高意义却返回定义"这种看起来有依据、实际答非所问的结果——
+   这是老版本评测抓出来的真实缺陷。
 
 > 顺带说清楚一个常见误解：**参考区间这类结构化事实根本不该用 RAG 查。**
-> 它是四维键值查询（项目 × 性别 × 年龄 × 单位），不是模糊检索问题。
-> RAG 的用武之地是"解释性文本"，不是"阈值判定"。
+> 它是四维键值查询（项目 × 性别 × 年龄 × 单位），走的是代码查表，不是模糊检索。
+> 向量检索在本项目里只用于"解释性文本"的召回，**从不参与阈值判定**。
 
 ---
 
@@ -184,7 +230,7 @@ Zayed 等（*CCLM* 2025）也测出大模型检验开单精确率 68–82%、**�
 ```bash
 git clone https://github.com/yang-rz-602/lablens.git
 cd lablens
-pip install -e ".[app]"
+pip install -e ".[app,dev]"     # 已含 LangChain 栈、FAISS、DashScope SDK
 
 # 1) 离线跑通全链路（不需要任何 API Key）
 python evals/run_eval.py
@@ -192,21 +238,34 @@ python evals/run_eval.py
 # 2) 启动界面（内置合成示例可直接体验，无需上传任何数据）
 streamlit run app.py
 
-# 3) 跑测试
+# 3) 跑测试（279 个）
 pytest -q
 ```
 
-### 配置模型（可选）
+> 首次启用向量检索时会调用一次 embedding 把语料向量化（574 条，约 1 分钟），
+> 索引按**语料内容指纹**缓存在 `.index/` 下；之后重启直接复用，改了语料才会自动重建。
 
-不配置也能用——系统会自动降级到**离线抽取式解读**（每句话都来自知识库原文，不存在幻觉风险，只是表述不够流畅）。
+### 配置模型与向量检索（可选）
+
+**不配置也能用**：系统会自动降级到**离线抽取式解读** + **BM25 词法检索 + 确定性重排**。
+每句话都来自知识库原文（不存在幻觉风险），判读、检索、拒答、护栏全部照常工作，
+只是检索没有语义能力、表述不够流畅。**CI 与评测全程跑在这条路径上，不需要任何凭证。**
+
+配了 `DASHSCOPE_API_KEY` 就会自动启用完整 RAG 链路
+（FAISS 向量库 + `text-embedding-v4` + `gte-rerank-v2` 交叉编码器重排），
+同一个 Key 也用于通义千问的语言模型：
 
 ```bash
 cp .env.example .env
-# 任选一个：通义千问（DashScope）/ 智谱 GLM / SiliconFlow / OpenAI / 本地 vLLM
 export DASHSCOPE_API_KEY=sk-xxxx
 ```
 
-所有供应商都走 OpenAI 兼容协议，切换只改 `base_url` 与模型名，见 `core/providers/__init__.py` 的 `PRESETS`。
+想用别的供应商（智谱 GLM / SiliconFlow / OpenAI / DeepSeek / 本地 vLLM·Ollama）：
+语言模型切换只改 `base_url` 与模型名，见 `core/providers/__init__.py` 的 `PRESETS`；
+向量与重排则可用 `LABLENS_EMBED_MODEL` / `LABLENS_RERANK_MODEL` 覆盖。
+
+当前生效的是哪条路径，界面侧栏与「关于」页都会如实标注检索模式、
+向量库与重排器名称——**降级了就说降级了，不假装自己有语义能力**。
 
 ---
 
@@ -225,7 +284,10 @@ export DASHSCOPE_API_KEY=sk-xxxx
 }
 ```
 
-**零依赖**：手写 JSON-RPC 2.0 over stdio，不需要 `mcp` SDK。
+**不依赖 `mcp` SDK**：手写 JSON-RPC 2.0 over stdio，任何 Python 环境都能直接跑，
+也不会因为 SDK 版本变化而失效。四个判读类工具（`judge_lab_items` / `lookup_indicator` /
+`list_indicators` / `convert_unit`）**完全不需要 API Key，也不调用任何模型**——
+它们就是确定性代码。只有 `explain_lab_result` 用得上检索与 LLM。
 
 | 工具 | 作用 |
 |---|---|
@@ -248,7 +310,7 @@ export DASHSCOPE_API_KEY=sk-xxxx
 |---|---|---|---|
 | **KB-1** | 参考区间、危急值阈值、单位换算、别名、LOINC | `data/indicators_*.yaml`（95 项） | 代码查表（四维：项目 × 性别 × 年龄 × 单位） |
 | **KB-2** | 单位归一与换算 | `core/units.py` | 纯函数 |
-| **KB-3** | 指标临床意义、影响因素、注意事项 | `data/corpus.jsonl`（420+ 条） | 约束检索（先按指标名硬过滤，再按维度排序） |
+| **KB-3** | 指标临床意义、影响因素、注意事项 | `data/corpus.jsonl`（574 条 / 82 指标） | LangChain 约束检索：硬过滤 → BM25 ∥ FAISS 混合召回 → gte-rerank 重排 |
 
 **参考区间的数据源按可信度排序**：
 
@@ -292,14 +354,16 @@ GB/T 39725-2020 要求健康医疗数据"不宜存储在境外服务器"；
 ```
 lablens/
 ├── core/                ★ 后端：判读 / 检索 / 解释 / 护栏 / 单位 / 存储
+│   └── rag.py           LangChain RAG 装配（embedding / FAISS / reranker 工厂）
 ├── ui/                  界面设计系统（设计令牌 + 纯函数组件，可单测）
 ├── data/                KB-1 指标字典 + KB-3 解释语料
+├── .index/              FAISS 索引缓存（按语料指纹分目录，可随时删）
 ├── evals/               合成评测集 + 评测脚本 + RESULTS.md
-├── tests/               218 个测试（含 20 个 AppTest 端到端界面测试）
+├── tests/               279 个测试（含 20 个 AppTest 端到端界面测试）
 ├── docs/                部署文档（魔搭创空间）
 ├── scripts/             一键部署脚本
 ├── requirements.txt     创空间依赖清单（平台不读 pyproject.toml）
-├── mcp_server.py        MCP 封装（零依赖）
+├── mcp_server.py        MCP 封装（手写 JSON-RPC，判读工具不依赖 LLM）
 └── app.py               Streamlit 界面入口
 ```
 

@@ -29,6 +29,9 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 # 依赖单独一层，改代码时不必重装
+# 注意：LangChain 栈（langchain / langchain-classic / langchain-community /
+# langchain-openai）与 faiss-cpu / rank-bm25 / dashscope 都在 [project.dependencies] 里，
+# 属于必需依赖，所以 ".[app]" 已经包含完整检索能力，无需额外 extras。
 COPY pyproject.toml README.md ./
 RUN pip install --no-cache-dir -e ".[app]" \
     && pip install --no-cache-dir pytest ruff
@@ -38,6 +41,9 @@ COPY data/ ./data/
 COPY evals/ ./evals/
 COPY tests/ ./tests/
 COPY app.py mcp_server.py ./
+
+# .index/（FAISS 索引缓存）刻意不打进镜像：它按语料指纹在运行时生成，
+# 且没有 DASHSCOPE_API_KEY 时系统会走 BM25 + 确定性重排，根本不需要向量索引。
 
 # 以非 root 运行
 RUN useradd --create-home --shell /bin/bash lablens \

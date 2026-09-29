@@ -10,8 +10,23 @@ keywords = ["medical-ai", "laboratory-report", "llm", "rag", "constrained-retrie
 
 dependencies = [
     "pydantic>=2.6",
-    "httpx>=0.27",
     "PyYAML>=6.0",
+    # ---- LLM 层：LangChain 官方 OpenAI 集成 ----
+    # 全部内置供应商（通义千问 / 智谱 / SiliconFlow / OpenAI / DeepSeek / 本地 vLLM）
+    # 都提供 OpenAI 兼容端点，因此一套 ChatOpenAI + base_url 即可覆盖，
+    # 不再手写 HTTP 请求与重试逻辑。
+    "langchain-core>=1.0,<2",
+    "langchain-openai>=1.0,<2",
+    # ---- 检索层：混合召回 + 重排 + 向量库 ----
+    # langchain-classic 提供 EnsembleRetriever / ContextualCompressionRetriever
+    # （LangChain 1.x 把这两者从 langchain.retrievers 移到了 langchain-classic）
+    "langchain>=1.0,<2",
+    "langchain-classic>=1.0,<2",
+    "langchain-community>=0.4,<0.5",
+    "faiss-cpu>=1.9",
+    "rank-bm25>=0.2",
+    # DashScope：embedding（text-embedding-v4）与交叉编码器重排（gte-rerank-v2）
+    "dashscope>=1.20",
 ]
 
 [project.optional-dependencies]

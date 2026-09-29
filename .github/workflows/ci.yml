@@ -26,7 +26,13 @@ jobs:
       - name: 安装依赖
         run: |
           python -m pip install --upgrade pip
+          # LangChain 栈 + FAISS 都在必需依赖里，这一步即包含完整检索能力
           pip install -e ".[app,dev]"
+
+      # CI 刻意**不配置任何 API Key**：整条链路（判读 + 检索 + 重排 + 解释 + 护栏）
+      # 必须能在离线状态下跑通，这是本项目的硬约束之一。
+      # 这意味着 CI 实际覆盖的是 BM25 + 确定性重排的降级路径；
+      # 向量检索与 DashScope 重排的装配则由 tests/test_rag.py 用注入的假向量离线覆盖。
 
       - name: 代码风格检查
         run: ruff check .

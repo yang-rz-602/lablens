@@ -30,8 +30,9 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
 from core.explain import DISCLAIMER, interpret, render_ref, render_value  # noqa: E402
-from core.providers import PRESETS, LLMError, OpenAICompatClient  # noqa: E402
-from core.retriever import Retriever, load_corpus  # noqa: E402
+from core.providers import PRESETS, LangChainLLMClient, LLMError  # noqa: E402
+from core.rag import build_retriever  # noqa: E402
+from core.retriever import Retriever  # noqa: E402
 from core.rules import KnowledgeBase, build_report, load_knowledge_base  # noqa: E402
 from core.schema import (  # noqa: E402
     LabItem,
@@ -93,7 +94,13 @@ def get_kb() -> KnowledgeBase:
 
 @st.cache_resource(show_spinner=False)
 def get_retriever() -> Retriever:
-    return Retriever(load_corpus(DATA_DIR / "corpus.jsonl"))
+    """装配 LangChain 检索链。
+
+    配了 ``DASHSCOPE_API_KEY`` 时走 FAISS 向量检索 + gte-rerank 重排；
+    没有凭证时自动降级为 BM25 + 确定性重排，功能完整可用（只是语义能力弱一些）。
+    ``index_dir`` 让 FAISS 索引按语料指纹落盘，重启不必重复调 embedding。
+    """
+    return build_retriever(DATA_DIR / "corpus.jsonl", index_dir=ROOT / ".index")
 
 
 @st.cache_data(show_spinner=False)
@@ -155,7 +162,8 @@ def sidebar() -> dict:
             f'<div style="font-size:.8rem;color:#475569;line-height:1.9">'
             f"指标字典 <b>{len(kb)}</b> 项<br>"
             f"解释语料 <b>{stats['chunks']}</b> 条 / {stats['indicators']} 个指标<br>"
-            f"检索模式 <code>{stats['mode']}</code></div>",
+            f"检索 <code>{stats['mode']}</code> · 向量库 <code>{stats['vectorstore'] or '未启用'}</code><br>"
+            f"重排 <code>{stats['reranker']}</code></div>",
             unsafe_allow_html=True,
         )
         with st.expander("知识库来源"):
@@ -184,7 +192,7 @@ def make_client(cfg: dict):
     if not api_key:
         return None
     try:
-        return OpenAICompatClient.from_preset(
+        return LangChainLLMClient.from_preset(
             cfg["provider_key"], api_key=api_key, model=cfg["model"] or None
         )
     except LLMError:
@@ -441,9 +449,16 @@ def render_about_tab(kb: KnowledgeBase, retriever: Retriever) -> None:
         f"""
 - 指标字典：**{len(kb)}** 项，参考区间来源标注到具体卫生行业标准
 - 解释语料：**{stats['chunks']}** 条，按 `(指标, 维度)` 切分
-- 检索方式：**约束检索**——先用规则引擎给出的指标名硬过滤，再在组内按维度优先级排序；
-  检索不到可靠依据时返回"暂无依据"而不是硬编一段解释
+- 检索方式：**LangChain 约束检索**——先把候选集按指标名**硬过滤**，再用
+  `EnsembleRetriever`（BM25 + FAISS 向量）混合召回，交给重排器精排；
+  维度先验决定跨维度优先级、重排分决定同维度排序
+- 检索不到可靠依据时返回"暂无依据"而不是硬编一段解释
 """
+    )
+    st.caption(
+        f"当前检索环境：模式 `{stats['mode']}` · 向量库 `{stats['vectorstore'] or '未启用'}` · "
+        f"重排 `{stats['reranker']}`"
+        + ("" if stats["vectorstore"] else "（未配置 `DASHSCOPE_API_KEY`，已降级为词法检索）")
     )
 
     section("评测结果")

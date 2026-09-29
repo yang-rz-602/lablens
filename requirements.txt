@@ -9,8 +9,21 @@
 # streamlit / numpy 等产生冲突。
 
 pydantic>=2.6
-httpx>=0.27
 PyYAML>=6.0
+
+# ---- LLM 层：LangChain ----
+langchain-core>=1.0
+langchain-openai>=1.0
+langchain>=1.0
+langchain-classic>=1.0
+langchain-community>=0.4
+
+# ---- 检索层：FAISS 向量库 + BM25 词法召回 + DashScope 重排 ----
+faiss-cpu>=1.9
+rank-bm25>=0.2
+dashscope>=1.20
+
+# 界面用（创空间基础镜像通常已预装，这里显式声明以免版本漂移）
 pandas>=2.0
 
 # 趋势存储用。创空间重启即丢数据，这项功能在线上意义有限，

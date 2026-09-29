@@ -20,10 +20,16 @@
 | **线上地址** | <https://modelscope.cn/studios/yangrz2222/lablens>（公开、国内直连、免费） |
 | **直连地址** | <https://yangrz2222-lablens.ms.show> |
 | **代码仓库** | <https://github.com/yang-rz-602/lablens> |
-| **代码规模** | 7,215 行 Python（core 3011 / tests 1670 / root 1077 / ui 600 / evals 553 / scripts 304） |
-| **测试** | **218 个，全绿**（含 20 个端到端界面测试） |
+| **技术栈** | Python 3.10+ · **LangChain 1.x** · **FAISS** · DashScope（`text-embedding-v4` + `gte-rerank-v2`）· Pydantic v2 · Streamlit |
+| **代码规模** | 7,076 行 Python（core 3055 / tests 1717 / root 956 / ui 622 / evals 468 / scripts 258） |
+| **测试** | **279 个，全绿**（含 20 个端到端界面测试、61 个 RAG/LLM 层测试） |
 | **评测** | 生产路径准确率 **100.0%**，危急值漏报 **0** 项 |
 | **知识库** | 95 项指标字典 + 574 条解释语料 |
+
+> **检索与 LLM 层已重构为 LangChain**（2026-09 之后）：
+> `EnsembleRetriever`（BM25 ∥ FAISS）+ `ContextualCompressionRetriever`（gte-rerank-v2 重排），
+> LLM 传输层从手写 HTTP 换成 LangChain `ChatOpenAI`。
+> **没有 API Key 时自动降级为 BM25 + 确定性重排**，CI 全程跑在降级路径上，不需要任何凭证。
 
 ---
 
@@ -77,14 +83,26 @@ host        = https://yangrz2222-lablens.ms.show
 ```
 Python       3.14.4   （⚠️ 创空间跑的是 3.11，新代码需兼容 3.11）
 pydantic     2.13.5
-httpx        0.28.1
 PyYAML       6.0.3
 streamlit    1.63.0
 pandas       3.0.5
 duckdb       1.5.5
 pytest       9.1.1
 ruff         0.16.7
+
+# LangChain 栈（重构后新增）
+langchain          1.4.3
+langchain-core     1.6.5
+langchain-classic  1.0.8     ← EnsembleRetriever / ContextualCompressionRetriever 在这里
+langchain-community 0.4.2    ← BM25Retriever / DashScopeEmbeddings / DashScopeRerank
+langchain-openai   1.6.6
+faiss-cpu          1.15.1
+rank-bm25          0.2.2
+dashscope          1.27.7
 ```
+
+> 注意 `httpx` 已不再是直接依赖：手写的 HTTP 客户端已被 LangChain 的
+> `ChatOpenAI` 取代（`httpx` 现在只是 `langchain-openai` 的传递依赖）。
 
 ---
 
@@ -95,9 +113,10 @@ cd lablens
 
 # 1) 建环境（用 uv 最快；普通 venv 也行）
 uv venv .venv
-uv pip install --python .venv pydantic httpx PyYAML pytest duckdb streamlit
+# 依赖清单已含 LangChain 栈与 FAISS，直接按 pyproject 装即可
+uv pip install --python .venv -e ".[app,dev]"
 
-# 2) 跑测试（218 个，约 1 分钟）
+# 2) 跑测试（279 个，约 1 分钟）
 .venv/Scripts/python -m pytest -q
 
 # 3) 跑评测（不需要网络、不需要 API Key）
@@ -108,8 +127,12 @@ uv pip install --python .venv pydantic httpx PyYAML pytest duckdb streamlit
 ```
 
 **不需要任何 API Key 就能跑通全部功能。** 没有 Key 时系统自动降级到
-「离线抽取式解读」——判读、检索、拒答、护栏全部照常工作，只是解读文案由知识库原文拼装，
-不如语言模型流畅。这是刻意的设计：**把可验证性从"有没有额度"里解耦出来**。
+「离线抽取式解读」+「BM25 词法检索 + 确定性重排」——判读、检索、拒答、护栏全部照常工作，
+只是解读文案由知识库原文拼装、检索没有语义能力，不如配了 Key 时流畅准确。
+这是刻意的设计：**把可验证性从"有没有额度"里解耦出来**。
+
+配置 `DASHSCOPE_API_KEY` 后会自动启用完整 RAG 链路
+（FAISS 向量库 + `text-embedding-v4` + `gte-rerank-v2` 交叉编码器重排）。
 
 ### Windows 沙箱下的两个坑（如果在这个环境里开发）
 
@@ -184,10 +207,14 @@ $env:GIT_AUTHOR_NAME="别的名字"; $env:GIT_AUTHOR_EMAIL="other@example.com"
         │  LabReport
         ▼
 ┌──────────────────────────────────────────────────────────┐
-│ Stage 3  解释层（LLM + 约束检索 + 拒答） core/explain.py   │
+│ Stage 3  解释层（LLM + LangChain 约束检索 + 重排 + 拒答）   │
+│                                      core/explain.py      │
 │  · 先按 canonical_name 硬过滤 —— 绝不跨指标检索             │
+│  · EnsembleRetriever：BM25 ∥ FAISS 向量（metadata filter）│
+│  · ContextualCompressionRetriever：gte-rerank-v2 交叉编码器│
 │  · 再按判定结果排维度优先级（偏高→升高意义，偏低→降低意义）   │
 │  · 得分低于阈值 → 返回"暂无可靠依据"，不硬编                  │
+│  · 无 Key 时：BM25 + 确定性词面重排，功能完整只是弱一些       │
 └──────────────────────────────────────────────────────────┘
         │
         ▼
@@ -235,18 +262,19 @@ Meyer 那篇的结论原文：在用户未提供参考区间时，**AI 应被训
 
 ```
 lablens/
-├── core/                       ★ 后端（3011 行）
+├── core/                       ★ 后端
 │   ├── schema.py               三层数据契约 + DecisionTrace（Pydantic 强校验）
 │   ├── units.py                单位归一与解析（纯函数，写法规格化）
-│   ├── rules.py                ★ 唯一的数值判定层，可穷举单测
-│   ├── retriever.py            约束检索（BM25 + 元数据硬过滤 + 维度优先级 + 拒答）
-│   ├── providers/__init__.py   LLM 传输层（OpenAI 兼容 + 6 个供应商预设 + 离线夹具）
+│   ├── rules.py                ★ 唯一的数值判定层，可穷举单测（不含任何 LLM）
+│   ├── retriever.py            ★ 约束检索（LangChain：硬过滤 → 混合召回 → 重排 → 拒答）
+│   ├── rag.py                  LangChain RAG 装配（embedding / FAISS / reranker 工厂）
+│   ├── providers/__init__.py   LLM 传输层（LangChain ChatOpenAI + 6 个供应商预设 + 离线假模型）
 │   ├── extract.py              Stage 1 抽取（含防幻觉提示词）
 │   ├── explain.py              Stage 3 解释（含抽取式降级路径）
 │   ├── guard.py                ★ 输出护栏（正则确定性拦截）
 │   └── store.py                趋势存储（默认关闭）
 │
-├── ui/                         界面层（600 行）
+├── ui/                         界面层
 │   ├── theme.py                设计令牌 + 全局 CSS
 │   └── components.py           纯函数组件（数据 → HTML），可单测
 │
@@ -255,24 +283,28 @@ lablens/
 │   ├── indicators_biochem.yaml     生化 + 免疫（67 项）
 │   └── corpus.jsonl                解释语料 574 条 / 82 指标（396 KB）
 │
-├── evals/                      评测（553 行）
+├── .index/                     FAISS 向量索引缓存（按语料指纹分目录，可随时删）
+│
+├── evals/                      评测
 │   ├── synthetic/ground_truth.json 20 份合成报告 / 276 项
 │   ├── render.py                   把 ground truth 渲染成仿真报告（文本 + 图片）
 │   ├── run_eval.py                 三条路径评测 + CI 安全闸门
 │   └── RESULTS.md                  自动生成的评测报告
 │
-├── tests/                      218 个测试（1670 行）
+├── tests/                      279 个测试
 │   ├── test_rules.py           48  判定逻辑（含拒判、性别区间、别名冲突消歧）
 │   ├── test_units.py           41  单位归一与解析
 │   ├── test_guard.py           29  输出护栏（含误伤检查）
+│   ├── test_providers.py       29  LangChain LLM 传输层（消息转换 / JSON 修复重试）
+│   ├── test_rag.py             32  FAISS + 混合召回 + 重排 + 拒答 + Stage 3 集成（全离线可跑）
 │   ├── test_mcp_server.py      26  MCP 协议 + 工具
 │   ├── test_app.py             20  端到端界面（AppTest，无需浏览器）
-│   ├── test_retriever.py       19  约束检索与拒答
+│   ├── test_retriever.py       19  约束检索与拒答（对外 API 兼容性）
 │   └── test_ui.py              35  界面组件纯函数
 │
-├── scripts/deploy_modelscope.py  一键部署（304 行）
+├── scripts/deploy_modelscope.py  一键部署
 ├── docs/DEPLOY_MODELSCOPE.md     部署文档
-├── mcp_server.py                 MCP 封装（零依赖手写 JSON-RPC）
+├── mcp_server.py                 MCP 封装（手写 JSON-RPC 2.0，判读工具本身不依赖 LLM）
 ├── app.py                        Streamlit 界面入口
 ├── HANDOVER.md                   ← 本文档
 ├── README.md                     对外门面
@@ -284,24 +316,55 @@ lablens/
 
 ## 8. 关键设计决策（FAQ）
 
-### Q：为什么不用向量数据库？是不是没做 RAG？
+### Q：为什么用 LangChain + FAISS？医疗场景不是更适合纯词法检索吗？
 
-**没有向量库是刻意的，不是遗漏。** 项目依赖只有 `pydantic / httpx / PyYAML`，
-没有 Chroma、FAISS、Milvus、Qdrant。
+**这是当前架构，也是踩过坑之后的选择。** 有一点必须先说清楚：
+**向量检索在本项目里只是"召回的一条腿"，不是判定的依据**——
+数值判定 100% 仍由 `core/rules.py` 的确定性代码完成，参考区间也仍然走查表，
+不是语义检索出来的。换掉检索层不会动摇 §6 那三条硬约束。
 
-三个理由：
+当前链路（`core/retriever.py`）：
 
-1. **候选集已经被硬过滤掉了。** `canonical_name` 由规则引擎查表得到，用它先过滤，
-   组内只剩几条到十几条候选。向量检索擅长"从百万文档里捞相关"，这里没有这个问题。
-2. **医疗场景下向量检索反而更危险。** 肌酐 / 尿素 / 胱抑素C 在语义空间里挨得极近——
-   向量检索最容易做的事，恰好就是"串指标"，而这正是本项目最不能犯的错。
-3. **可复现、零依赖。** 词法打分确定性、可单测；向量检索要引入 embedding 服务，
-   多一个失败点和一个不确定性来源。
+```
+canonical_name（规则引擎查表得到，不是模型生成）
+   → 硬过滤：候选集锁死在本指标的语料上
+   → EnsembleRetriever   BM25Retriever ∥ FAISS(metadata filter)
+   → ContextualCompressionRetriever   DashScope gte-rerank-v2
+   → 维度先验（业务规则）→ 阈值拒答
+```
 
-**升级接口已预留**：`Retriever(embed_fn=...)` 传入 embedding 函数即自动切换混合检索
-（`mode` 从 `lexical` 变 `hybrid`，BM25 + 余弦加权）。有测试覆盖，且 embedding 挂掉时**自动降级回词法**。
+为什么敢上向量检索，以及怎么防它"串指标"：
 
-**什么时候该上**：语料超过 2000 条，或要支持跨指标的语义查询（如"哪些指标和肾功能有关"）。现在是 574 条。
+1. **过滤在召回之前，而且是硬的。** FAISS 那条腿靠 metadata `filter={"canonical_name": ...}`
+   限制；BM25 那条腿直接喂**子集**构建（`BM25Retriever` 不支持 metadata filter，
+   所以不靠"先召回再过滤"——那会漏召回）。两条腿都在构造期就被锁死，
+   所以**结构上不可能**把肌酐的依据写给尿素。`test_rag.py` 里有一条用例
+   把真实语料的 82 个指标逐个跑一遍来守这条性质。
+2. **语义能力确实有用。** 词法检索对"剧烈运动会不会影响这个指标"这类
+   措辞差异大的查询召回很差；交叉编码器重排在这类查询上明显更稳。
+3. **不确定性被隔离在可降级的位置。** 没有 Key、embedding 挂掉、重排服务超时，
+   都会自动退回 BM25 + 确定性重排，功能完整只是弱一些（`mode` 字段从
+   `hybrid` 变 `lexical`，界面上如实标注）。CI 全程跑在降级路径上，不需要任何 Key。
+
+**维度先验压过相似度，是刻意的。** 候选集已经硬过滤到同一指标，
+此时"取哪一类依据"（定义 / 升高意义 / 影响因素）比"哪一句字面更像"重要得多。
+所以打分成两个不重叠的带：维度先验决定**跨维度**优先级，重排分只决定**同维度内**排序
+（`_DIM_WEIGHTS` + `_RERANK_SPAN=0.19`）。否则就会出现"查升高意义却返回定义"
+这种看起来有依据、实际答非所问的结果——那是老版本评测抓出来的真实缺陷。
+
+### Q：为什么索引缓存目录要按语料哈希命名？
+
+因为 FAISS 索引是**不可增量更新**的，改了语料却复用旧索引会静默返回错误的候选。
+把语料内容哈希编进目录名（`corpus_index_dir`），"语料变了 → 目录变了 → 自动重建"
+就是结构性保证，不需要额外的失效逻辑。
+
+### Q：`.index/` 里为什么会有 FAISS 的坑？
+
+FAISS 的 C++ 层用 ANSI `fopen` 打开路径，**Windows 上含中文的绝对路径会打开失败**
+（报 `could not open ... No such file or directory`，而目录其实存在）。
+本仓库根目录 `C:\Users\<中文名>\Desktop\简历\lablens` 正好命中。
+`_faiss_safe_path()` 的做法是把路径转成**相对当前工作目录的 ASCII 路径**再交给 FAISS，
+内核用当前目录句柄解析因而不受编码影响。`test_rag.py` 有两条回归用例守着它。
 
 ### Q：为什么 `data/` 与代码分离？
 
@@ -441,7 +504,24 @@ python scripts/deploy_modelscope.py --owner yangrz2222 --tail-logs
 - [ ] 儿童 / 妊娠期参考区间分档（现在只有成人 + 性别分层）
 - [ ] 抽出层加入 OCR 置信度（参考 `blood-test-explainer` 的字段级评测范式）
 - [ ] FHIR Observation 出口（B 端集成）
-- [ ] 语料超过 2000 条时接入 embedding，启用混合检索
+- [ ] **重排器换成可离线跑的本地模型**（BGE-reranker-base）——创空间基础镜像已带
+      `torch2.9.1`，所以这条路是通的；现在是"有 Key 用 DashScope API，无 Key 用确定性词面重排"
+- [ ] 用真实脱敏报告验证检索质量（现在只能验证"不串指标"这类结构性性质）
+
+### 技术债 / 需要留意的上游变化
+
+- ⚠️ **`langchain-community` 已被官方标记为 sunset**（安装时会打 DeprecationWarning）。
+  本项目只从它取三样东西：`BM25Retriever`、`DashScopeEmbeddings`、`DashScopeRerank`。
+  官方迁移方向是"独立的集成包"，但 DashScope 的 embedding / rerank **目前没有**独立包
+  （`langchain-qwq` 只有 chat model），所以暂时无法迁走。
+  `pyproject.toml` 里已把它钉在 `>=0.4,<0.5`（LangChain 1.x 兼容线），
+  上游一旦提供独立包，只需改 `core/rag.py` 的两个工厂函数。
+- ⚠️ **FAISS 在 Windows 上不支持含中文的绝对路径**（见 §8 最后一条 FAQ）。
+  现在的做法是转相对路径；如果将来索引目录必须放在工作目录之外，需要改用
+  `faiss.serialize_index` + Python 自己写文件来绕开 C++ 的文件 I/O。
+- ⚠️ `langchain.retrievers` 在 LangChain 1.x **已不存在**，
+  `EnsembleRetriever` / `ContextualCompressionRetriever` 都在 `langchain_classic.retrievers`。
+  升级 LangChain 大版本时这里最容易踩，`tests/test_rag.py` 会在导入期就报出来。
 
 ### 明确不做（设计边界，别当成待办）
 
@@ -456,8 +536,10 @@ python scripts/deploy_modelscope.py --owner yangrz2222 --tail-logs
 
 ```bash
 # 测试 / 质量
-pytest -q                                   # 全部 218 个
+pytest -q                                   # 全部 279 个
 pytest tests/test_rules.py -q               # 只跑判定逻辑
+pytest tests/test_rag.py -q                 # 只跑检索 / 向量库 / 重排
+pytest tests/test_providers.py -q           # 只跑 LLM 传输层
 ruff check .
 python evals/run_eval.py --gate             # 安全闸门
 

@@ -179,13 +179,13 @@ def evaluate_extraction(cases: list[dict[str, Any]], limit: int = 5) -> dict[str
     """
     try:
         from core.extract import extract_report
-        from core.providers import OpenAICompatClient
+        from core.providers import LangChainLLMClient
         from evals.render import render_text
     except ImportError:
         return None
 
     try:
-        client = OpenAICompatClient.from_env()
+        client = LangChainLLMClient.from_env()
     except Exception:  # noqa: BLE001
         return None
 

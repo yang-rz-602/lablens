@@ -16,6 +16,9 @@ pytest-cache-files-*/
 .ruff_cache/
 tests/.tmp/
 
+# --- FAISS 向量索引缓存：按语料指纹生成，可随时重建，不入库 ---
+.index/
+
 # --- 本地数据：默认不产生，但一旦启用趋势存储就会出现在这里 ---
 *.duckdb
 *.duckdb.wal

@@ -29,6 +29,16 @@ GET /openapi/v1/studios/hardware?sdk_type=streamlit
 `GET /studios/sdk-versions?sdk_type=streamlit` 返回空——Streamlit 类型无需指定 SDK 版本，
 依赖由 `requirements.txt` 安装。基础镜像共 24 个（Python 3.11 / 3.12）。
 
+> **关于 LangChain 与 FAISS：** 重构后 `requirements.txt` 里多了 LangChain 1.x 栈、
+> `faiss-cpu`、`rank-bm25`、`dashscope`。这些都有 Python 3.11 / 3.12 的官方 wheel，
+> 装得上。两点注意：
+>
+> 1. **不配 `DASHSCOPE_API_KEY` 也能跑。** 没有 Key 时自动降级为 BM25 + 确定性重排，
+>    不会因为缺 Key 启动失败。所以线上可以先不配 Key 部署，确认能起来再补。
+> 2. **创空间重启即丢文件系统**，所以 `.index/`（FAISS 索引缓存）每次冷启动都会重建。
+>    冷启动首次检索会多花几秒；没有 Key 时根本不涉及这一步。
+
+
 ## 你需要准备什么
 
 | 项 | 说明 | 谁来做 |
