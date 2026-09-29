@@ -552,6 +552,22 @@ python scripts/deploy_modelscope.py --owner yangrz2222 --tail-logs
 - ⚠️ `langchain.retrievers` 在 LangChain 1.x **已不存在**，
   `EnsembleRetriever` / `ContextualCompressionRetriever` 都在 `langchain_classic.retrievers`。
   升级 LangChain 大版本时这里最容易踩，`tests/test_rag.py` 会在导入期就报出来。
+- 🔴 **MCP 冒烟测试曾经从仓库建立起就一直红着，而没人发现**（2026-09-29 修复）。
+  历史 8 次 CI 运行**全部**在这个 job 上失败，主测试矩阵却一直绿，所以只看
+  "测试通过了吗"是发现不了的。根因是一条**永远不可能匹配**的断言：
+
+  ```bash
+  grep -q '"flag": "CH"' mcp_out.jsonl     # ← 永远匹配不上
+  ```
+
+  MCP 把工具结果作为**字符串**放在 `result.content[0].text` 里，原始输出中是转义形态
+  `\"flag\": \"CH\"`，而 grep 找的是字面量 `"flag": "CH"`。
+  现在改为 `scripts/check_mcp_smoke.py` 解析后断言语义（握手 + 工具枚举 +
+  `flag=CH` + `critical_high` + `decision_trace`），比碰字符串更强。
+
+  **教训**：CI 的红/绿本身也要被人确认过。这个仓库的 CI 一直是红的，
+  但文档里写的是"CI 全绿"——**没有任何一处真的去读过 Actions 的结果**。
+  以后改完 CI 相关的东西，用 `.tmp/ci_status.py` 那种方式把 conclusion 读出来再下结论。
 
 ### 明确不做（设计边界，别当成待办）
 

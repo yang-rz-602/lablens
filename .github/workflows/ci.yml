@@ -71,6 +71,9 @@ jobs:
             '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"judge_lab_items","arguments":{"items":[{"name":"钾","result":"6.8","unit":"mmol/L","reference":"3.5-5.3"}],"sex":"M"}}}' \
             | python mcp_server.py > mcp_out.jsonl
           cat mcp_out.jsonl
-          grep -q '"name": "lablens"' mcp_out.jsonl
-          grep -q '"flag": "CH"' mcp_out.jsonl
-          echo "MCP server 握手、工具枚举与危急值判读均正常"
+
+          # 用脚本解析而不是 grep。MCP 把工具结果作为**字符串**放在
+          # result.content[0].text 里，原始输出中是转义形态（\"flag\": \"CH\"），
+          # 所以 `grep '"flag": "CH"'` 永远匹配不上——这条断言从仓库建立起
+          # 就一直红着（历史 8 次运行全部在此失败，而主矩阵一直绿）。
+          python scripts/check_mcp_smoke.py mcp_out.jsonl
