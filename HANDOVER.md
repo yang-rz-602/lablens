@@ -22,7 +22,7 @@
 | **代码仓库** | <https://github.com/yang-rz-602/lablens> |
 | **技术栈** | Python 3.10+ · **LangChain 1.x** · **FAISS** · DashScope（`text-embedding-v4` + `gte-rerank-v2`）· Pydantic v2 · Streamlit |
 | **代码规模** | 7,076 行 Python（core 3055 / tests 1717 / root 956 / ui 622 / evals 468 / scripts 258） |
-| **测试** | **279 个，全绿**（含 20 个端到端界面测试、61 个 RAG/LLM 层测试） |
+| **测试** | **292 个，全绿**（含 20 个端到端界面测试、61 个 RAG/LLM 层测试） |
 | **评测** | 生产路径准确率 **100.0%**，危急值漏报 **0** 项 |
 | **知识库** | 95 项指标字典 + 574 条解释语料 |
 
@@ -116,7 +116,7 @@ uv venv .venv
 # 依赖清单已含 LangChain 栈与 FAISS，直接按 pyproject 装即可
 uv pip install --python .venv -e ".[app,dev]"
 
-# 2) 跑测试（279 个，约 1 分钟）
+# 2) 跑测试（292 个，约 1 分钟）
 .venv/Scripts/python -m pytest -q
 
 # 3) 跑评测（不需要网络、不需要 API Key）
@@ -256,6 +256,36 @@ Meyer 那篇的结论原文：在用户未提供参考区间时，**AI 应被训
 产品标签上的"非医疗器械、不能诊断"**不足以推翻器械认定**。
 → **免责声明不能替代对输出内容本身的克制。**
 
+#### 误伤同样是缺陷：药名规则的语境豁免
+
+护栏方向是"宁枉勿纵"，但**误删合法医学说明也是缺陷**——"哪些药会影响这个指标"
+是知识库必须保留的科普内容，不是用药建议。
+
+原先的 `drug_name_plus_action` 只有"动词 + 药名"两个要素，在检验医学文本里天然撞车。
+用不变式测试扫全量语料后一次性暴露了 15 处误伤，例如：
+
+| 被误删的原文（逐字来自 `corpus.jsonl`） | 命中原因 |
+|---|---|
+| ……以及使用部分利尿剂和**抗利尿激素**分泌异常状态。 | 「抗利尿激素」是 SIADH 疾病状态，不是被开出的药 |
+| 饮酒、服用部分**抗生素**、抗癫痫药……也可使AST上升。 | 讲的是"什么会升高AST"，是病因说明 |
+| 但极高值**不一定代表**保护作用增强。 | `certainty_overreach` 忽略了否定词，把克制表述判成绝对化 |
+| ……长期血糖控制评估与**治疗方案**调整。 | `prescription_word` 在罗列临床用途时命中 |
+
+修法是给**药名类**规则加一条保守的语境豁免（`_descriptive_not_prescriptive`）：
+**有描述性线索、且没有祈使线索**才放行。三条要点：
+
+1. **祈使线索刻意收窄**：`需要`（"需要说明的是…"）、`不宜`（"不宜单独据此判断"，属克制表述）
+   都是话语标记而非用药指导，放进判据会把大量合法说明误判成建议；`您/你` 才是最强信号。
+2. **剂量类不豁免**：`prescription_drug_dose` 的"剂量 + 单位"是最硬信号，维持原强度。
+3. **补上原有漏放**：`drug_name_plus_action` 的动词表原先缺 `注射|静滴|静注|外用|吸入|含服`，
+   导致"静滴青霉素""吸入激素"这类不带剂量的给药指令**整条漏放**（已用 HEAD 版本对照确认是原有缺陷）。
+   补动词的同时排除了动词与药名之间的「的」——`注射胰岛素`是祈使句，
+   `注射的胰岛素制剂`是名词短语，两者必须区分。
+
+**守这条性质的是不变式而非样例**：离线拼装路径的输出逐字来自语料，因此
+`test_offline_extractive_path_never_redacts_corpus_text` 断言"护栏在这条路径上不得删掉任何东西"。
+只断言"最终输出里没有违规内容"的用例抓不到误删——句子被删掉之后输出当然干净。
+
 ---
 
 ## 7. 目录与文件职责
@@ -291,10 +321,10 @@ lablens/
 │   ├── run_eval.py                 三条路径评测 + CI 安全闸门
 │   └── RESULTS.md                  自动生成的评测报告
 │
-├── tests/                      279 个测试
+├── tests/                      292 个测试
 │   ├── test_rules.py           48  判定逻辑（含拒判、性别区间、别名冲突消歧）
 │   ├── test_units.py           41  单位归一与解析
-│   ├── test_guard.py           29  输出护栏（含误伤检查）
+│   ├── test_guard.py           41  输出护栏（含误伤检查）
 │   ├── test_providers.py       29  LangChain LLM 传输层（消息转换 / JSON 修复重试）
 │   ├── test_rag.py             32  FAISS + 混合召回 + 重排 + 拒答 + Stage 3 集成（全离线可跑）
 │   ├── test_mcp_server.py      26  MCP 协议 + 工具
@@ -536,7 +566,7 @@ python scripts/deploy_modelscope.py --owner yangrz2222 --tail-logs
 
 ```bash
 # 测试 / 质量
-pytest -q                                   # 全部 279 个
+pytest -q                                   # 全部 292 个
 pytest tests/test_rules.py -q               # 只跑判定逻辑
 pytest tests/test_rag.py -q                 # 只跑检索 / 向量库 / 重排
 pytest tests/test_providers.py -q           # 只跑 LLM 传输层

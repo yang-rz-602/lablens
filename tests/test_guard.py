@@ -82,6 +82,85 @@ def test_does_not_flag_legitimate_text(text: str) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# 回归：药名出现在「病因描述」里不得被误判成用药建议
+# --------------------------------------------------------------------------- #
+#: 逐字来自 data/corpus.jsonl（低钠的 lowering 相关因素）。
+#: 「抗利尿激素」是 SIADH 这个疾病状态的一部分，不是被开出的药。
+CAUSAL_DRUG_SENTENCE = (
+    "也可见于大量出汗后仅补充水分、长期低盐饮食、稀释性低钠血症与"
+    "输注不含氯的液体，以及使用部分利尿剂和抗利尿激素分泌异常状态。"
+)
+
+
+def test_drug_mention_in_causal_context_is_not_flagged() -> None:
+    """回归：护栏曾把这句话整句删掉，导致知识库里合法的一段病因说明凭空消失。"""
+    hits = scan_text(CAUSAL_DRUG_SENTENCE)
+    assert not hits, f"误伤知识库原文：{[h.matched for h in hits]}"
+
+
+def test_causal_drug_sentence_survives_sanitize() -> None:
+    clean, hits = sanitize_text(CAUSAL_DRUG_SENTENCE)
+    assert clean == CAUSAL_DRUG_SENTENCE, "合法医学说明被删掉了"
+    assert hits == []
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "建议使用胰岛素。",
+        "可以口服激素治疗。",
+        "需要使用抗生素。",
+    ],
+)
+def test_prescriptive_drug_mention_is_still_blocked(text: str) -> None:
+    """同一批药名一旦带上指导语气必须继续拦——语境豁免不能变成放水。"""
+    assert scan_text(text), f"带指导语气的药名建议被漏放：{text}"
+
+
+def test_bare_drug_instruction_without_cues_is_still_blocked() -> None:
+    """既无描述性线索、也无祈使线索的裸指令，按原强度拦截。"""
+    assert scan_text("使用胰岛素。")
+
+
+def test_dose_rules_are_not_exempted() -> None:
+    """剂量类信号最硬，即使句子里有描述性措辞也不豁免。"""
+    assert scan_text("可见于服用阿司匹林100mg后。")
+
+
+# --------------------------------------------------------------------------- #
+# 回归：注射类给药指令曾经整条漏放（动词表缺项，属原有缺陷）
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    "text",
+    [
+        "每天注射胰岛素两次。",
+        "静滴青霉素。",
+        "吸入激素。",
+        "外用激素。",
+    ],
+)
+def test_parenteral_instructions_are_blocked(text: str) -> None:
+    """``drug_name_plus_action`` 原先的动词表缺了注射/静滴/静注/外用/吸入/含服，
+
+    于是"静滴青霉素"这类**不带剂量**的给药指令完全没有规则覆盖。这里锁死不再复发。
+    """
+    assert scan_text(text), f"注射类给药指令被漏放：{text}"
+
+
+def test_nominalized_drug_phrase_is_not_an_instruction() -> None:
+    """「注射**的**胰岛素制剂」是名词短语（被注射的胰岛素），不是给药指令。
+
+    判据是动词与药名之间是否夹了「的」：祈使句不会带它。
+    这句逐字来自 data/corpus.jsonl（C肽条目）。
+    """
+    text = (
+        "C肽是胰岛素原经酶切后释放的连接肽，与胰岛素以等摩尔比例由胰岛β细胞"
+        "共同分泌入血，其半衰期较胰岛素长，且外源注射的胰岛素制剂中不含C肽。"
+    )
+    assert not scan_text(text), "把名词短语误判成了给药指令"
+
+
+# --------------------------------------------------------------------------- #
 # sanitize
 # --------------------------------------------------------------------------- #
 def test_sanitize_removes_offending_sentence_keeps_rest() -> None:

@@ -423,3 +423,59 @@ def test_stage3_guard_still_blocks_on_llm_path() -> None:
         retriever=build_retriever(CORPUS, use_rag=False),
     )
     assert result.guard_hits, "诊断结论与用药建议必须被护栏拦下"
+
+
+# --------------------------------------------------------------------------- #
+# 不变式：护栏不得误删知识库原文
+# --------------------------------------------------------------------------- #
+def test_offline_extractive_path_never_redacts_corpus_text() -> None:
+    """离线拼装路径的输出**逐字来自知识库语料**，所以护栏不该删掉任何东西。
+
+    语料是经过校对的检验医学原文，讲的都是"哪些因素、哪些药会影响这个指标"，
+    属于必须保留的科普内容。护栏在这里一旦删句子，就说明规则把合法医学说明
+    误判成了用药建议。
+
+    这条不变式专门用来抓**误删**：只断言"最终输出里没有违规内容"的用例抓不到它，
+    因为句子被删掉之后，输出当然就是干净的——它分不清"删对了"和"误删了"。
+    """
+    from core.explain import interpret
+    from core.rules import build_report, load_knowledge_base
+    from core.schema import RawLabItem, RawLabReport
+
+    cases = json.loads(
+        (ROOT / "evals/synthetic/ground_truth.json").read_text(encoding="utf-8")
+    )["cases"]
+    kb = load_knowledge_base(DATA_DIR)
+    retriever = build_retriever(CORPUS, use_rag=False)
+
+    offenders: list[tuple[str, str, str]] = []
+    for case in cases:
+        patient = case.get("patient") or {}
+        items = []
+        for it in case["items"]:
+            value = it.get("value")
+            items.append(
+                RawLabItem(
+                    raw_name=it.get("name_zh") or it["canonical_name"],
+                    result_raw=f"{value:g}" if value is not None else str(it.get("value_text") or ""),
+                    unit_raw=it.get("unit"),
+                    ref_raw=it.get("ref_text"),
+                    page=1,
+                )
+            )
+        report = build_report(
+            RawLabReport(
+                report_type=case.get("report_type"),
+                patient_sex=patient.get("sex"),
+                patient_age=patient.get("age"),
+                items=items,
+            ),
+            kb,
+            model_used="synthetic",
+        )
+        result = interpret(report, client=None, retriever=retriever)
+        offenders += [
+            (case["case_id"], h.rule, h.matched) for h in result.guard_hits
+        ]
+
+    assert offenders == [], f"离线路径误删了知识库原文：{offenders}"

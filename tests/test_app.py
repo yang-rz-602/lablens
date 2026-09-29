@@ -168,6 +168,11 @@ def test_output_guard_holds_for_every_sample(app: AppTest) -> None:
     知识库里会出现「小剂量阿司匹林等药物会干扰结果」这类正常的医学说明——
     它讲的是"哪些药影响检验"，不是给用户的用药建议，**不应该被拦**。
     所以这里用真正的护栏去检验输出，而不是维护一份关键词黑名单。
+
+    注意这条用例只覆盖一半：它断言"违规内容不残留"，但**抓不到误删**——
+    句子被 ``sanitize_text`` 删掉之后，输出当然是干净的。
+    "合法语料不得被删"这另一半由
+    ``tests/test_rag.py::test_offline_extractive_path_never_redacts_corpus_text`` 守着。
     """
     from core.guard import scan_text
 

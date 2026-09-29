@@ -2,7 +2,7 @@
 
 > **数值判定 100% 交给确定性代码，语言模型只负责把结果翻译成人话；没有参考区间时，系统拒绝判断。**
 
-[![tests](https://img.shields.io/badge/tests-279%20passed-brightgreen)](#评测)
+[![tests](https://img.shields.io/badge/tests-292%20passed-brightgreen)](#评测)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 [![LangChain](https://img.shields.io/badge/LangChain-1.x-1C3C3C)](https://python.langchain.com/)
@@ -135,7 +135,7 @@ Meyer 等那篇的结论原文就是：在用户未提供参考区间时，**AI 
 | 数据校验 | Pydantic v2（三层数据契约 + JSON Schema 约束 + 二次校验） |
 | 前端 | Streamlit + 自建设计令牌组件层 |
 | Agent 集成 | MCP（JSON-RPC 2.0 over stdio） |
-| 测试 / 质量 | pytest（279 个，含 Streamlit `AppTest` 端到端）+ ruff + CI 安全闸门 |
+| 测试 / 质量 | pytest（292 个，含 Streamlit `AppTest` 端到端）+ ruff + CI 安全闸门 |
 
 > 供应商全部兼容 OpenAI 协议，所以 LLM 层用 LangChain 的 `ChatOpenAI` 配不同 `base_url`
 > 即可覆盖——**不需要为每家写适配代码，也不手写 HTTP 请求与重试**。
@@ -238,7 +238,7 @@ python evals/run_eval.py
 # 2) 启动界面（内置合成示例可直接体验，无需上传任何数据）
 streamlit run app.py
 
-# 3) 跑测试（279 个）
+# 3) 跑测试（292 个）
 pytest -q
 ```
 
@@ -359,7 +359,7 @@ lablens/
 ├── data/                KB-1 指标字典 + KB-3 解释语料
 ├── .index/              FAISS 索引缓存（按语料指纹分目录，可随时删）
 ├── evals/               合成评测集 + 评测脚本 + RESULTS.md
-├── tests/               279 个测试（含 20 个 AppTest 端到端界面测试）
+├── tests/               292 个测试（含 20 个 AppTest 端到端界面测试）
 ├── docs/                部署文档（魔搭创空间）
 ├── scripts/             一键部署脚本
 ├── requirements.txt     创空间依赖清单（平台不读 pyproject.toml）
